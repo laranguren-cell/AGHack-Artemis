@@ -1,7 +1,7 @@
 # AGHack-Team Artemis
 Artemis team submission for Arizona Hack, November 15, 2026
 # CanopyClear — Orchard Boundary-Layer & Spray Decision Telemetry (`index.html`)
-
+Presentation: https://docs.google.com/presentation/d/1kRqKMToIvLMfo4pgYEG91DVn5Teik8UNPZKtS88Bmpk/edit?usp=sharing 
 **CanopyClear** is a standalone, zero-dependency HTML5/CSS3/JavaScript microclimate telemetry and spray decision-support interface built for California orchard operations. Packaged in a single self-contained `index.html` file, it loads instantaneously offline in any modern web browser without external libraries, servers, or build tools.
 
 > **Core Thesis:** A conventional single-height ground sensor only measures conditions near the orchard floor—it cannot detect whether air above the canopy is warmer (surface temperature inversion), faster (wind-speed shear), or blowing in another direction (directional twist). Adding a second sensor node above the canopy makes true vertical boundary-layer profiling possible.
