@@ -1,4 +1,4 @@
-# AGHack-Artemis
+# AGHack-Team Artemis
 Artemis team submission for Arizona Hack, November 15, 2026
 # CanopyClear — Orchard Boundary-Layer & Spray Decision Telemetry (`index.html`)
 
