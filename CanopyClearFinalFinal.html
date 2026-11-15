@@ -1029,10 +1029,10 @@
       <section class="verdict-hero state-stop" id="verdictBanner" aria-live="polite">
         <div class="verdict-top-row">
           <div style="flex: 1; min-width: 260px;">
-            <div class="verdict-kicker">Grower Spray Decision — Should You Spray Right Now?</div>
-            <h1 class="verdict-title" id="verdictTitle">NO — DO NOT SPRAY</h1>
+            <div class="verdict-kicker">Grower Spray Decision — STOP / GO / CAUTION</div>
+            <h1 class="verdict-title" id="verdictTitle">STOP — DO NOT SPRAY</h1>
             <p class="verdict-subtitle" id="verdictSubtitle">
-              Warm air above the treetops (+5.0°F inversion) and 8.0 mph wind shear will trap spray droplets and push drift off-target.
+              Warm air above the treetops (+5.0°F warmer than the ground) will trap spray mist and let it drift away. Do not spray right now.
             </p>
             <div class="verdict-chips" id="verdictChipsRow"></div>
           </div>
@@ -1040,7 +1040,7 @@
           <div class="outlook-box">
             <div class="outlook-label">+12h Spray Window Outlook</div>
             <div class="outlook-text" id="outlookSummaryBox">
-              Inversion expected to break by +3h (09:00 PT) as surface heating mixes the canopy column.
+              Next GO window opens at +3h (09:00 PT) once morning warmth mixes the air.
             </div>
           </div>
         </div>
@@ -1053,10 +1053,10 @@
                 <div class="comp-label">Conventional Single Sensor</div>
                 <div style="font-size: 0.7rem; color: var(--text-muted);" id="singleMastSub">5.0 ft sub-canopy only</div>
               </div>
-              <span class="status-pill pill-single-pass" id="singleResultPill">LOWER NODE PASS</span>
+              <span class="status-pill pill-single-pass" id="singleResultPill">1-SENSOR: GO</span>
             </div>
             <div class="comp-detail" id="singleSummaryText">
-              Lower node looks nominal (58.0°F, 4.0 mph), but vertical profile above canopy is NOT MEASURED.
+              Ground sensor shows 58.0°F and 4.0 mph wind (74% humidity), but cannot see what the air is doing above the 19.0 ft treetops.
             </div>
           </div>
 
@@ -1070,11 +1070,11 @@
               <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                 <button type="button" class="btn-compact" id="inlineSingleToggleBtn" style="min-height: 24px; padding: 2px 8px; font-size: 0.69rem;">+ Compare 1-Sensor</button>
                 <span class="micro-badge crimson" id="comparisonBadge" style="display: none;">BLIND SPOT CAUGHT</span>
-                <span class="status-pill pill-stop" id="dualResultPill">STATUS: STOP</span>
+                <span class="status-pill pill-stop" id="dualResultPill">STOP</span>
               </div>
             </div>
             <div class="comp-detail" id="dualSummaryText">
-              Upper node caught +5.0°F inversion, 8.0 mph wind shear, and 60° directional twist across the crown.
+              Why STOP: Warm air above the treetops (+5.0°F warmer than the ground) will trap spray mist and let it drift away.
             </div>
           </div>
         </div>
@@ -1506,7 +1506,7 @@
 
         // 1. Vertical Thermal Inversion (ΔT)
         if (!hasUpper) {
-          unknownReasons.push('Upper mast telemetry offline');
+          unknownReasons.push('Top sensor above the trees is offline');
           rows.push({
             category: 'atm',
             gate: 'Vertical Thermal Inversion (ΔT)',
@@ -1518,7 +1518,7 @@
             dualTag: 'unknown'
           });
         } else if (deltaT >= 1.0) {
-          stopReasons.push(`+${deltaT.toFixed(1)}°F temperature inversion trapping spray above canopy`);
+          stopReasons.push(`Warm air above the treetops (+${deltaT.toFixed(1)}°F warmer than the ground) will trap spray mist and let it drift away`);
           rows.push({
             category: 'atm',
             gate: 'Vertical Thermal Inversion (ΔT)',
@@ -1530,7 +1530,7 @@
             dualTag: 'stop'
           });
         } else if (deltaT >= 0.5) {
-          cautionReasons.push(`Developing +${deltaT.toFixed(1)}°F thermal cap`);
+          cautionReasons.push(`Air above the treetops is warming up (+${deltaT.toFixed(1)}°F), which can start trapping spray mist`);
           rows.push({
             category: 'atm',
             gate: 'Vertical Thermal Inversion (ΔT)',
@@ -1567,7 +1567,7 @@
             dualTag: 'unknown'
           });
         } else if (atm.upper.windMph > prod.maxWindMph) {
-          stopReasons.push(`Upper wind ${atm.upper.windMph.toFixed(1)} mph exceeds ${prod.maxWindMph.toFixed(1)} mph cap`);
+          stopReasons.push(`Wind above the treetops is too fast (${atm.upper.windMph.toFixed(1)} mph — limit is ${prod.maxWindMph.toFixed(1)} mph) and will blow spray off-target`);
           rows.push({
             category: 'atm',
             gate: 'Above-Canopy Wind Speed',
@@ -1579,7 +1579,9 @@
             dualTag: 'stop'
           });
         } else if (atm.upper.windMph > prod.advWindMph || atm.upper.windMph < 2.0) {
-          const why = atm.upper.windMph < 2.0 ? 'Stagnant dead-calm air (<2.0 mph)' : `Elevated upper wind (${atm.upper.windMph.toFixed(1)} mph)`;
+          const why = atm.upper.windMph < 2.0
+            ? 'Air above the trees is dead calm (under 2.0 mph), so spray droplets can hang in the air'
+            : `Wind above the treetops is picking up (${atm.upper.windMph.toFixed(1)} mph)`;
           cautionReasons.push(why);
           rows.push({
             category: 'atm',
@@ -1608,7 +1610,7 @@
         let singleWindStatus = 'GO';
         if (atm.lower.windMph > prod.maxWindMph) {
           singleWindStatus = 'STOP';
-          stopReasons.push(`Ground wind ${atm.lower.windMph.toFixed(1)} mph exceeds limit`);
+          stopReasons.push(`Wind near the ground is too strong (${atm.lower.windMph.toFixed(1)} mph — limit is ${prod.maxWindMph.toFixed(1)} mph)`);
           rows.push({
             category: 'atm',
             gate: 'Sub-Canopy Ground Wind',
@@ -1621,7 +1623,11 @@
           });
         } else if (atm.lower.windMph < 1.5 || atm.lower.windMph > prod.advWindMph) {
           singleWindStatus = 'CAUTION';
-          cautionReasons.push(`Sub-canopy wind ${atm.lower.windMph.toFixed(1)} mph outside ideal 2–${prod.advWindMph} mph range`);
+          cautionReasons.push(
+            atm.lower.windMph < 1.5
+              ? `Air near the ground is almost still (${atm.lower.windMph.toFixed(1)} mph) — droplets may hang instead of settling`
+              : `Wind near the ground is getting breezy (${atm.lower.windMph.toFixed(1)} mph)`
+          );
           rows.push({
             category: 'atm',
             gate: 'Sub-Canopy Ground Wind',
@@ -1658,7 +1664,7 @@
             dualTag: 'unknown'
           });
         } else if (speedShear >= prod.shearStopMph) {
-          stopReasons.push(`${speedShear.toFixed(1)} mph wind shear across crown`);
+          stopReasons.push(`Wind above the trees is blowing ${speedShear.toFixed(1)} mph faster than near the ground, pushing spray mist sideways`);
           rows.push({
             category: 'atm',
             gate: 'Canopy Wind-Speed Shear',
@@ -1670,7 +1676,7 @@
             dualTag: 'stop'
           });
         } else if (speedShear >= prod.shearCautionMph) {
-          cautionReasons.push(`${speedShear.toFixed(1)} mph moderate wind shear`);
+          cautionReasons.push(`Wind speed jumps by ${speedShear.toFixed(1)} mph above the treetops`);
           rows.push({
             category: 'atm',
             gate: 'Canopy Wind-Speed Shear',
@@ -1707,7 +1713,7 @@
             dualTag: 'unknown'
           });
         } else if (dirTwist >= prod.twistStopDeg) {
-          stopReasons.push(`${dirTwist}° wind direction twist above canopy`);
+          stopReasons.push(`Wind above the treetops is blowing in a different direction (${dirTwist}° shift) than wind near the ground`);
           rows.push({
             category: 'atm',
             gate: 'Canopy Directional Twist',
@@ -1719,7 +1725,7 @@
             dualTag: 'stop'
           });
         } else if (dirTwist >= prod.twistCautionDeg) {
-          cautionReasons.push(`${dirTwist}° directional wind shift aloft`);
+          cautionReasons.push(`Wind direction shifts by ${dirTwist}° above the treetops`);
           rows.push({
             category: 'atm',
             gate: 'Canopy Directional Twist',
@@ -1745,7 +1751,7 @@
 
         // 6. Upper-Mast Crown Clearance
         if (effectiveClearanceFt < 4.0) {
-          unknownReasons.push(`Upper sensor (${state.highSensorFt.toFixed(1)} ft) is inside/too close to canopy crown (${rec.estTop.toFixed(1)} ft)`);
+          unknownReasons.push(`Top sensor (${state.highSensorFt.toFixed(1)} ft) is too close to the treetops (${rec.estTop.toFixed(1)} ft) to get a clean reading`);
           rows.push({
             category: 'atm',
             gate: 'Upper-Mast Crown Clearance',
@@ -1757,7 +1763,7 @@
             dualTag: 'unknown'
           });
         } else if (effectiveClearanceFt < 6.0 || effectiveClearanceFt > 12.0) {
-          cautionReasons.push(`Upper mast clearance (+${effectiveClearanceFt.toFixed(1)} ft) outside ideal 6–10 ft band`);
+          cautionReasons.push(`Top sensor height (+${effectiveClearanceFt.toFixed(1)} ft above trees) is slightly outside the ideal 6–10 ft spot`);
           rows.push({
             category: 'atm',
             gate: 'Upper-Mast Crown Clearance',
@@ -1784,7 +1790,7 @@
         // 7. EPA Crop Eligibility & Registration
         const cropAllowed = prod.eligibleCrops.includes(state.crop);
         if (!cropAllowed) {
-          stopReasons.push(`${prod.name} is prohibited on ${crop.shortName} (EPA Reg. ${prod.regNo})`);
+          stopReasons.push(`${prod.name} is not allowed on ${crop.shortName} according to its EPA label`);
         }
         rows.push({
           category: 'label',
@@ -1821,14 +1827,14 @@
         if (peakTemp >= prod.maxTempF || lowTemp <= prod.minTempF) {
           tempRhStatus = 'STOP (TEMP CUTOFF)';
           tempRhTag = 'stop';
-          stopReasons.push(`Temperature (${peakTemp.toFixed(1)}°F) violates ${prod.name} label limits (${prod.minTempF}–${prod.maxTempF}°F)`);
+          stopReasons.push(`Temperature (${peakTemp.toFixed(1)}°F) is outside the safe ${prod.minTempF}–${prod.maxTempF}°F label range for ${prod.name}`);
         } else if (peakTemp >= prod.advTempF || atm.lower.rhPct <= prod.minRhCaution) {
           tempRhStatus = 'CAUTION (HEAT/RH)';
           tempRhTag = 'caution';
           cautionReasons.push(
             atm.lower.rhPct <= prod.minRhCaution
-              ? `Low humidity (${atm.lower.rhPct}% RH ≤ ${prod.minRhCaution}%) increases droplet evaporation`
-              : `Elevated temperature (${peakTemp.toFixed(1)}°F ≥ ${prod.advTempF}°F advisory)`
+              ? `Dry air (${atm.lower.rhPct}% humidity) can evaporate spray droplets before they reach the leaves`
+              : `Warm weather (${peakTemp.toFixed(1)}°F) increases risk of leaf burn`
           );
         }
 
@@ -1859,11 +1865,11 @@
           if (recp.isAquatic && prod.aquaticBufferFt >= 100 && aloftDriftRisk) {
             bufStatus = `STOP (${prod.aquaticBufferFt}FT BUFFER)`;
             bufTag = 'stop';
-            stopReasons.push(`Mandatory ${prod.aquaticBufferFt} ft aquatic buffer at risk from upper-canopy drift`);
+            stopReasons.push(`Wind above the trees could blow spray across the required ${prod.aquaticBufferFt} ft water safety buffer`);
           } else if (aloftDriftRisk) {
             bufStatus = `CAUTION (${prod.aquaticBufferFt}FT BUF)`;
             bufTag = 'caution';
-            cautionReasons.push(`Sensitive receptor downwind (${prod.aquaticBufferFt} ft buffer requires crosswind verification)`);
+            cautionReasons.push(`Stay at least ${prod.aquaticBufferFt} ft back from ${recp.name.toLowerCase()} and watch wind direction`);
           } else {
             bufStatus = `PASS (${prod.aquaticBufferFt}FT BUF)`;
             bufTag = 'pass';
@@ -1902,21 +1908,21 @@
         const deltaTLabel = deltaT !== null ? `${deltaT >= 0 ? '+' : ''}${deltaT.toFixed(1)}°F` : 'unverified';
 
         let verdictClass = 'state-go';
-        let verdictTitle = 'YES — SAFE TO SPRAY';
-        let verdictSubtitle = `Boundary layer is well-mixed (${deltaTLabel} ΔT), winds are steady, and all ${prod.name} EPA label checks pass.`;
+        let verdictTitle = 'GO — SAFE TO SPRAY';
+        let verdictSubtitle = `Conditions are safe to spray. Air from the ground to above the treetops is steady, and all ${prod.name} label rules pass.`;
 
         if (dualStatus === 'STOP') {
           verdictClass = 'state-stop';
-          verdictTitle = 'NO — DO NOT SPRAY';
-          verdictSubtitle = `${stopReasons[0]}. Spraying right now risks off-target drift or EPA label violation.`;
+          verdictTitle = 'STOP — DO NOT SPRAY';
+          verdictSubtitle = `${stopReasons[0]}. Do not spray right now.`;
         } else if (dualStatus === 'UNKNOWN') {
           verdictClass = 'state-unknown';
-          verdictTitle = 'HOLD — VERIFY UPPER SENSOR';
-          verdictSubtitle = `${unknownReasons[0]}. CanopyClear will not clear spraying without valid above-canopy telemetry.`;
+          verdictTitle = 'STOP / HOLD — CHECK UPPER SENSOR';
+          verdictSubtitle = `${unknownReasons[0]}. Do not spray until the top sensor reading is fixed.`;
         } else if (dualStatus === 'CAUTION') {
           verdictClass = 'state-caution';
-          verdictTitle = 'CAUTION — ADJUST & MONITOR';
-          verdictSubtitle = `${cautionReasons[0]}. Use coarse drift-reduction nozzles and verify downwind buffer.`;
+          verdictTitle = 'CAUTION — SPRAY WITH CARE';
+          verdictSubtitle = `${cautionReasons[0]}. Spray with care using coarse drift-reducing nozzles and check downwind distance.`;
         }
 
         const chips = [
@@ -1977,18 +1983,18 @@
 
         let outlookText = '';
         if (current.dualStatus === 'UNKNOWN') {
-          outlookText = 'Restore upper-mast sensor connection or place node 6–10 ft above canopy crown to unlock automated clearance.';
+          outlookText = 'Move the top sensor 6–10 ft above the treetops (or reconnect it) to get a clear GO / CAUTION / STOP reading.';
         } else if (current.dualStatus === 'GO') {
           const nextStop = series.slice(state.forecastOffsetHr + 1).find((item) => item.dualStatus === 'STOP');
           outlookText = nextStop
-            ? `Clear window active now. Conditions degrade to STOP by +${nextStop.atm.offsetHr}h (${formatHour(nextStop.atm.localHour)} PT).`
-            : 'Favorable boundary-layer mixing persists across the remaining 12-hour forecast horizon.';
+            ? `GO window is open right now. Conditions turn to STOP in +${nextStop.atm.offsetHr}h (${formatHour(nextStop.atm.localHour)} PT).`
+            : 'GO window stays open for the next 12 hours with steady air mixing.';
         } else if (nextGo) {
-          outlookText = `Safe window opens at +${nextGo.atm.offsetHr}h (${formatHour(nextGo.atm.localHour)} PT) as surface heating mixes the canopy column.`;
+          outlookText = `Next GO window opens at +${nextGo.atm.offsetHr}h (${formatHour(nextGo.atm.localHour)} PT) once morning warmth mixes the air.`;
         } else if (nextCaution) {
-          outlookText = `No full GO window in next 12h; marginal CAUTION window appears at +${nextCaution.atm.offsetHr}h (${formatHour(nextCaution.atm.localHour)} PT).`;
+          outlookText = `No full GO window in the next 12 hours; a CAUTION window opens at +${nextCaution.atm.offsetHr}h (${formatHour(nextCaution.atm.localHour)} PT).`;
         } else {
-          outlookText = 'Persistent drift, heat, or label restrictions remain active across the entire +12h horizon.';
+          outlookText = 'STOP conditions stay in place across the next 12 hours due to wind, heat, or label limits.';
         }
 
         return { series, outlookText };
@@ -2383,17 +2389,17 @@
         document.getElementById('singleMastSub').textContent = `${state.lowSensorFt.toFixed(1)} ft sub-canopy floor only`;
         const singlePill = document.getElementById('singleResultPill');
         if (evalData.singleStatus === 'GO') {
-          singlePill.textContent = 'LOWER NODE PASS';
+          singlePill.textContent = '1-SENSOR: GO';
           singlePill.className = 'status-pill pill-single-pass';
         } else if (evalData.singleStatus === 'CAUTION') {
-          singlePill.textContent = 'LOWER CAUTION';
+          singlePill.textContent = '1-SENSOR: CAUTION';
           singlePill.className = 'status-pill pill-caution';
         } else {
-          singlePill.textContent = 'LOWER STOP';
+          singlePill.textContent = '1-SENSOR: STOP';
           singlePill.className = 'status-pill pill-stop';
         }
         document.getElementById('singleSummaryText').textContent =
-          `Lower node reads ${atm.lower.tempF.toFixed(1)}°F and ${atm.lower.windMph.toFixed(1)} mph (${atm.lower.rhPct}% RH), but boundary-layer air above ${rec.estTop.toFixed(1)} ft crown is UNMONITORED.`;
+          `Ground sensor shows ${atm.lower.tempF.toFixed(1)}°F and ${atm.lower.windMph.toFixed(1)} mph wind (${atm.lower.rhPct}% humidity), but cannot see what the air is doing above the ${rec.estTop.toFixed(1)} ft treetops.`;
 
         document.getElementById('dualMastSub').textContent =
           `${state.lowSensorFt.toFixed(1)} ft floor + ${state.highSensorFt.toFixed(1)} ft above-canopy vertical profile`;
@@ -2402,7 +2408,7 @@
         compBadge.style.display = (state.showSingleSensor && evalData.isBlindSpot) ? 'inline-block' : 'none';
 
         const dualPill = document.getElementById('dualResultPill');
-        dualPill.textContent = `STATUS: ${evalData.dualStatus}`;
+        dualPill.textContent = evalData.dualStatus === 'UNKNOWN' ? 'STOP / HOLD' : evalData.dualStatus;
         dualPill.className = 'status-pill ' + (
           evalData.dualStatus === 'GO' ? 'pill-go' :
           evalData.dualStatus === 'CAUTION' ? 'pill-caution' :
@@ -2411,14 +2417,14 @@
 
         if (!evalData.hasUpper) {
           document.getElementById('dualSummaryText').textContent =
-            'Upper node offline — CanopyClear refuses to extrapolate safety across the unmonitored canopy column.';
+            'Why STOP / HOLD: Top sensor is offline — holding spray until air above the trees can be checked.';
         } else if (evalData.stopReasons.length > 0) {
-          document.getElementById('dualSummaryText').textContent = `Blocked by: ${evalData.stopReasons.join('; ')}.`;
+          document.getElementById('dualSummaryText').textContent = `Why STOP: ${evalData.stopReasons.join('. ')}.`;
         } else if (evalData.cautionReasons.length > 0) {
-          document.getElementById('dualSummaryText').textContent = `Advisory flags: ${evalData.cautionReasons.join('; ')}.`;
+          document.getElementById('dualSummaryText').textContent = `Why CAUTION: ${evalData.cautionReasons.join('. ')}.`;
         } else {
           document.getElementById('dualSummaryText').textContent =
-            `Vertical column verified: ${evalData.deltaT >= 0 ? '+' : ''}${evalData.deltaT.toFixed(1)}°F ΔT, ${evalData.speedShear.toFixed(1)} mph shear, and ${evalData.dirTwist}° twist are all within safe limits.`;
+            'Why GO: Temperature, wind speed, and wind direction from the ground to above the treetops are steady and within label rules.';
         }
 
         // 4. Zone 2: Elevation & 12-Hour Forecast Visuals
