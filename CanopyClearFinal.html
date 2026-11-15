@@ -1,0 +1,2663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CanopyClear — Orchard Boundary-Layer &amp; Spray Decision Telemetry</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --obsidian-950: #090D16;
+      --obsidian-900: #0F172A;
+      --obsidian-800: #1E293B;
+      --slate-700: #334155;
+      --slate-600: #475569;
+      --slate-500: #64748B;
+      --slate-400: #94A3B8;
+      --slate-300: #CBD5E1;
+      --slate-200: #E2E8F0;
+      --slate-100: #F1F5F9;
+      --slate-50: #F8FAFC;
+      --white: #FFFFFF;
+
+      --cobalt-700: #0369A1;
+      --cobalt-600: #0284C7;
+      --cobalt-100: #E0F2FE;
+      --teal-700: #0F766E;
+      --teal-600: #0D9488;
+      --teal-100: #CCFBF1;
+
+      --emerald-800: #065F46;
+      --emerald-700: #047857;
+      --emerald-600: #059669;
+      --emerald-100: #D1FAE5;
+      --emerald-50: #ECFDF5;
+
+      --amber-800: #92400E;
+      --amber-700: #B45309;
+      --amber-600: #D97706;
+      --amber-100: #FEF3C7;
+      --amber-50: #FFFBEB;
+
+      --crimson-800: #991B1B;
+      --crimson-700: #B91C1C;
+      --crimson-600: #DC2626;
+      --crimson-100: #FEE2E2;
+      --crimson-50: #FEF2F2;
+
+      --text-primary: #0F172A;
+      --text-secondary: #334155;
+      --text-muted: #64748B;
+      --border-subtle: #E2E8F0;
+      --radius-lg: 14px;
+      --radius-md: 10px;
+      --radius-sm: 6px;
+      --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+      --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--slate-100);
+      color: var(--text-primary);
+      line-height: 1.45;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .tabular {
+      font-variant-numeric: tabular-nums;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* TOP TELEMETRY HEADER */
+    .app-header {
+      background: var(--obsidian-900);
+      color: var(--white);
+      padding: 12px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--obsidian-800);
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #0284C7, #0D9488);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+      letter-spacing: -0.02em;
+      color: var(--white);
+      flex-shrink: 0;
+    }
+
+    .brand-title {
+      font-size: 1.02rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--white);
+    }
+
+    .brand-sub {
+      font-size: 0.74rem;
+      color: var(--slate-400);
+    }
+
+    .header-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .live-status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--obsidian-800);
+      border: 1px solid var(--slate-700);
+      color: var(--slate-200);
+      padding: 6px 11px;
+      border-radius: 999px;
+      font-size: 0.74rem;
+      font-weight: 600;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10B981;
+      flex-shrink: 0;
+    }
+
+    .pulse-dot.amber {
+      background: #F59E0B;
+    }
+
+    .pulse-dot.crimson {
+      background: #EF4444;
+    }
+
+    .btn-header {
+      background: var(--cobalt-600);
+      color: var(--white);
+      border: none;
+      border-radius: 8px;
+      padding: 7px 13px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s ease;
+      min-height: 34px;
+    }
+
+    .btn-header:hover {
+      background: var(--cobalt-700);
+    }
+
+    .btn-header.toggle-off {
+      background: var(--obsidian-800);
+      border: 1px solid var(--slate-600);
+      color: #E2E8F0;
+    }
+
+    .btn-header.toggle-off:hover {
+      background: var(--slate-700);
+    }
+
+    .btn-header.toggle-on {
+      background: var(--teal-700);
+      border: 1px solid #14B8A6;
+      color: #FFFFFF;
+    }
+
+    .btn-header.toggle-on:hover {
+      background: var(--teal-600);
+    }
+
+    .toast-chip {
+      display: none;
+      background: var(--emerald-700);
+      color: var(--white);
+      font-size: 0.73rem;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 999px;
+    }
+
+    .toast-chip.visible {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    /* MAIN SHELL LAYOUT */
+    .workspace-shell {
+      display: grid;
+      grid-template-columns: 330px minmax(0, 1fr);
+      gap: 16px;
+      max-width: 1520px;
+      margin: 0 auto;
+      padding: 16px;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .workspace-shell {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* SIDEBAR CONTROLS */
+    .sidebar-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .control-card {
+      background: var(--white);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+    }
+
+    .control-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border-bottom: 1px solid var(--slate-100);
+      padding-bottom: 8px;
+    }
+
+    .control-card-title {
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--obsidian-900);
+    }
+
+    .scenario-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .scenario-btn {
+      border: 1px solid var(--slate-300);
+      background: var(--slate-50);
+      color: var(--obsidian-900);
+      border-radius: 8px;
+      padding: 7px 8px;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      transition: all 0.14s ease;
+    }
+
+    .scenario-btn:hover {
+      border-color: var(--cobalt-600);
+      background: var(--white);
+    }
+
+    .scenario-btn.active {
+      background: var(--obsidian-900);
+      border-color: var(--obsidian-900);
+      color: var(--white);
+      box-shadow: 0 2px 5px rgba(15, 23, 42, 0.16);
+    }
+
+    .scenario-btn-title {
+      font-size: 0.73rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .scenario-btn-meta {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      line-height: 1.2;
+    }
+
+    .scenario-btn.active .scenario-btn-meta {
+      color: #93C5FD;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .field-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .field-label {
+      font-size: 0.73rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+
+    .field-hint {
+      font-size: 0.69rem;
+      color: var(--text-muted);
+    }
+
+    select, input[type="number"], input[type="text"], textarea {
+      width: 100%;
+      border: 1px solid var(--slate-300);
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-family: inherit;
+      font-size: 0.79rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      background: var(--white);
+      min-height: 35px;
+    }
+
+    select:focus, input:focus, textarea:focus {
+      outline: 2px solid var(--cobalt-600);
+      outline-offset: -1px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--cobalt-600);
+      cursor: pointer;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn-compact {
+      background: var(--slate-100);
+      border: 1px solid var(--slate-300);
+      color: var(--obsidian-900);
+      border-radius: 7px;
+      padding: 5px 10px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      min-height: 30px;
+      transition: background 0.15s ease;
+    }
+
+    .btn-compact:hover {
+      background: var(--slate-200);
+    }
+
+    .btn-compact.primary {
+      background: var(--cobalt-600);
+      border-color: var(--cobalt-600);
+      color: var(--white);
+    }
+
+    .btn-compact.primary:hover {
+      background: var(--cobalt-700);
+    }
+
+    .ext-link {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--cobalt-700);
+      text-decoration: none;
+    }
+
+    .ext-link:hover {
+      text-decoration: underline;
+    }
+
+    .info-callout {
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 0.71rem;
+      color: var(--text-secondary);
+    }
+
+    /* MAIN WORKSPACE ZONES */
+    .main-workspace {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    /* ZONE 1: GROWER SPRAY DECISION HERO */
+    .verdict-hero {
+      background: var(--white);
+      border: 2px solid var(--slate-300);
+      border-radius: var(--radius-lg);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .verdict-hero.state-go {
+      background: linear-gradient(180deg, var(--emerald-50) 0%, var(--white) 52%);
+      border-color: var(--emerald-600);
+    }
+
+    .verdict-hero.state-caution {
+      background: linear-gradient(180deg, var(--amber-50) 0%, var(--white) 52%);
+      border-color: var(--amber-600);
+    }
+
+    .verdict-hero.state-stop {
+      background: linear-gradient(180deg, var(--crimson-50) 0%, var(--white) 52%);
+      border-color: var(--crimson-600);
+    }
+
+    .verdict-hero.state-unknown {
+      background: linear-gradient(180deg, var(--slate-100) 0%, var(--white) 52%);
+      border-color: var(--slate-600);
+    }
+
+    .verdict-top-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .verdict-kicker {
+      font-size: 0.71rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+    }
+
+    .verdict-title {
+      font-size: 1.55rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+    }
+
+    .state-go .verdict-title { color: var(--emerald-800); }
+    .state-caution .verdict-title { color: var(--amber-800); }
+    .state-stop .verdict-title { color: var(--crimson-800); }
+    .state-unknown .verdict-title { color: var(--obsidian-900); }
+
+    .verdict-subtitle {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-top: 5px;
+      max-width: 780px;
+    }
+
+    .verdict-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .v-chip {
+      background: var(--white);
+      border: 1px solid var(--slate-300);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.73rem;
+      font-weight: 700;
+      color: var(--obsidian-900);
+    }
+
+    .outlook-box {
+      background: var(--obsidian-900);
+      color: var(--white);
+      border-radius: 10px;
+      padding: 10px 14px;
+      min-width: 240px;
+      max-width: 310px;
+      flex-shrink: 0;
+    }
+
+    .outlook-label {
+      font-size: 0.67rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #38BDF8;
+      margin-bottom: 4px;
+    }
+
+    .outlook-text {
+      font-size: 0.76rem;
+      line-height: 1.4;
+      color: var(--slate-100);
+    }
+
+    .comparison-split {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      border-top: 1px solid rgba(15, 23, 42, 0.09);
+      padding-top: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .comparison-split {
+        grid-template-columns: 1fr !important;
+      }
+    }
+
+    .comp-col {
+      background: var(--white);
+      border: 1px solid var(--slate-200);
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .comp-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .comp-label {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: var(--obsidian-900);
+    }
+
+    .comp-detail {
+      font-size: 0.76rem;
+      color: var(--text-secondary);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+    }
+
+    .pill-go, .pill-single-pass {
+      background: var(--emerald-100);
+      color: var(--emerald-800);
+    }
+
+    .pill-caution {
+      background: var(--amber-100);
+      color: var(--amber-800);
+    }
+
+    .pill-stop {
+      background: var(--crimson-100);
+      color: var(--crimson-800);
+    }
+
+    .pill-unknown {
+      background: var(--slate-200);
+      color: var(--obsidian-900);
+    }
+
+    .micro-badge {
+      display: inline-block;
+      background: var(--slate-100);
+      border: 1px solid var(--slate-300);
+      color: var(--slate-700);
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    .micro-badge.cobalt {
+      background: var(--cobalt-100);
+      border-color: #7DD3FC;
+      color: var(--cobalt-700);
+    }
+
+    .micro-badge.crimson {
+      background: var(--crimson-100);
+      border-color: #FCA5A5;
+      color: var(--crimson-800);
+    }
+
+    .micro-badge.amber {
+      background: var(--amber-100);
+      border-color: #FCD34D;
+      color: var(--amber-800);
+    }
+
+    /* ZONE 2: VISUAL CHARTS GRID */
+    .zone-visual-grid {
+      display: grid;
+      grid-template-columns: 1.28fr 1fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 1180px) {
+      .zone-visual-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel-card {
+      background: var(--white);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .panel-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .panel-title {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: var(--obsidian-900);
+    }
+
+    .panel-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .svg-frame {
+      width: 100%;
+      border: 1px solid var(--slate-200);
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--slate-50);
+    }
+
+    .svg-frame svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    /* 12-HOUR FORECAST STRIP */
+    .forecast-strip {
+      display: grid;
+      grid-template-columns: repeat(13, minmax(0, 1fr));
+      gap: 3px;
+    }
+
+    @media (max-width: 640px) {
+      .forecast-strip {
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+      }
+    }
+
+    .fc-cell {
+      border: 1px solid var(--slate-200);
+      background: var(--slate-50);
+      border-radius: 6px;
+      padding: 4px 2px;
+      text-align: center;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      transition: all 0.12s ease;
+    }
+
+    .fc-cell:hover {
+      border-color: var(--cobalt-600);
+    }
+
+    .fc-cell.active {
+      background: var(--obsidian-900);
+      border-color: var(--obsidian-900);
+      color: var(--white);
+    }
+
+    .fc-hr {
+      font-size: 0.63rem;
+      font-weight: 700;
+    }
+
+    .fc-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+
+    .fc-dot.go { background: #10B981; }
+    .fc-dot.caution { background: #F59E0B; }
+    .fc-dot.stop { background: #EF4444; }
+    .fc-dot.unknown { background: #64748B; }
+
+    /* ZONE 3: AUDIT TABLE */
+    .zone-audit {
+      background: var(--white);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .audit-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .filter-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tab-btn {
+      border: 1px solid var(--slate-300);
+      background: var(--slate-50);
+      color: var(--text-secondary);
+      border-radius: 999px;
+      padding: 5px 11px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .tab-btn.active {
+      background: var(--obsidian-900);
+      border-color: var(--obsidian-900);
+      color: var(--white);
+    }
+
+    .table-scroll {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--slate-200);
+      border-radius: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.76rem;
+      text-align: left;
+    }
+
+    th {
+      background: var(--slate-50);
+      color: var(--slate-600);
+      font-weight: 800;
+      font-size: 0.69rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 9px 11px;
+      border-bottom: 1px solid var(--slate-200);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 9px 11px;
+      border-bottom: 1px solid var(--slate-100);
+      vertical-align: middle;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .gate-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .tag-pass { background: var(--emerald-100); color: var(--emerald-800); }
+    .tag-caution { background: var(--amber-100); color: var(--amber-800); }
+    .tag-stop { background: var(--crimson-100); color: var(--crimson-800); }
+    .tag-blind { background: var(--slate-200); color: var(--slate-700); }
+    .tag-unknown { background: var(--slate-200); color: var(--obsidian-900); }
+
+    /* CIMIS MODAL */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(9, 13, 22, 0.65);
+      z-index: 60;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      max-width: 560px;
+      width: 100%;
+      padding: 18px;
+      box-shadow: 0 20px 35px rgba(15, 23, 42, 0.25);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+  </style>
+</head>
+<body>
+  <!-- TOP TELEMETRY BAR -->
+  <header class="app-header">
+    <div class="brand-group">
+      <div class="brand-mark">CC</div>
+      <div>
+        <div class="brand-title">CanopyClear</div>
+        <div class="brand-sub">Orchard Boundary-Layer &amp; Spray Decision Telemetry</div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <div class="live-status-chip">
+        <span class="pulse-dot amber" id="sourceStatusDot"></span>
+        <span id="headerStatusText">Ground Illusion Example · 06:00 PT · Spring</span>
+      </div>
+      <span class="toast-chip" id="toastChip">Exported canopyclear_telemetry_log.csv</span>
+      <button type="button" class="btn-header toggle-off" id="toggleSingleSensorBtn" aria-pressed="false">1-Sensor Compare: OFF</button>
+      <button type="button" class="btn-header" id="exportCsvBtn">Export CSV Log</button>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <div class="workspace-shell">
+    <!-- LEFT SIDEBAR: 3 CONSOLIDATED CONTROL CARDS -->
+    <aside class="sidebar-panel">
+      <!-- SECTION 1: SIMPLE BOUNDARY-LAYER SCENARIOS & TIMELINE -->
+      <section class="control-card">
+        <div class="control-card-header">
+          <span class="control-card-title">1. Boundary-Layer Scenarios</span>
+          <span class="micro-badge cobalt" id="dataModeBadge">6 Presets</span>
+        </div>
+
+        <div class="scenario-grid" id="scenarioGrid" role="group" aria-label="Preset Weather Scenarios">
+          <button type="button" class="scenario-btn active" data-scenario="ground_illusion">
+            <span class="scenario-btn-title">Ground Illusion</span>
+            <span class="scenario-btn-meta">+5°F Inversion Aloft</span>
+          </button>
+          <button type="button" class="scenario-btn" data-scenario="clear_window">
+            <span class="scenario-btn-title">Clear Window</span>
+            <span class="scenario-btn-meta">Safe Lapse &amp; Wind</span>
+          </button>
+          <button type="button" class="scenario-btn" data-scenario="wind_shear">
+            <span class="scenario-btn-title">Wind Shear</span>
+            <span class="scenario-btn-meta">6.3 mph ΔWind · 65° Twist</span>
+          </button>
+          <button type="button" class="scenario-btn" data-scenario="summer_heat">
+            <span class="scenario-btn-title">Summer Heat</span>
+            <span class="scenario-btn-meta">91.5°F · 24% Low RH</span>
+          </button>
+          <button type="button" class="scenario-btn" data-scenario="high_wind">
+            <span class="scenario-btn-title">High Wind</span>
+            <span class="scenario-btn-meta">14.5 mph Aloft Drift</span>
+          </button>
+          <button type="button" class="scenario-btn" data-scenario="upper_offline">
+            <span class="scenario-btn-title">Sensor Offline</span>
+            <span class="scenario-btn-meta">Upper Fail-Safe Hold</span>
+          </button>
+        </div>
+
+        <!-- +12H TIME HORIZON SCRUBBER -->
+        <div class="field-group" style="border-top: 1px solid var(--slate-100); padding-top: 8px;">
+          <div class="field-label-row">
+            <label class="field-label" for="forecastRange">Forecast Horizon: <span class="tabular" id="forecastOffsetLabel">+0h (Now)</span></label>
+            <button type="button" class="btn-compact" id="playForecastBtn" style="min-height: 24px; padding: 2px 8px;">Play +12h</button>
+          </div>
+          <input type="range" id="forecastRange" min="0" max="12" step="1" value="0" />
+        </div>
+      </section>
+
+      <!-- SECTION 2: ORCHARD CROP, CANOPY & MAST GEOMETRY -->
+      <section class="control-card">
+        <div class="control-card-header">
+          <span class="control-card-title">2. Orchard &amp; Mast Geometry</span>
+          <span class="micro-badge" id="clearanceBadge">Clearance OK</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="cropSelect">Orchard Crop &amp; Training</label>
+          <select id="cropSelect">
+            <option value="almond">Almond (Central Valley Standard)</option>
+            <option value="walnut">Walnut (Tall Hedgerow)</option>
+            <option value="pistachio">Pistachio (Open Vase)</option>
+            <option value="stone_fruit">Stone Fruit — Peach/Nectarine</option>
+            <option value="citrus">Citrus — Navel/Mandarin</option>
+            <option value="grape">Table/Wine Grape (High-Wire Trellis)</option>
+          </select>
+        </div>
+
+        <div class="grid-2">
+          <div class="field-group">
+            <label class="field-label" for="treeAgeInput">Tree Age (yrs)</label>
+            <input type="number" id="treeAgeInput" min="1" max="45" value="11" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="canopyHeightInput">Canopy Top (ft)</label>
+            <input type="number" id="canopyHeightInput" min="4" max="38" step="0.5" value="17.5" />
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+          <span class="field-hint" id="canopySourceHint">Species curve (±1.5 ft uncertainty)</span>
+          <button type="button" class="btn-compact" id="resetCanopyCurveBtn" style="min-height: 24px; padding: 2px 8px; font-size: 0.68rem;">Use Age Curve</button>
+        </div>
+
+        <div class="grid-2">
+          <div class="field-group">
+            <label class="field-label" for="lowSensorInput">Lower Node (ft)</label>
+            <input type="number" id="lowSensorInput" min="3" max="12" step="0.5" value="5.0" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="highSensorInput">Upper Node (ft)</label>
+            <input type="number" id="highSensorInput" min="8" max="50" step="0.5" value="26.5" />
+          </div>
+        </div>
+
+        <button type="button" class="btn-compact" id="autoAlignMastBtn">Auto-Align Upper Node (+8 ft Above Crown)</button>
+      </section>
+
+      <!-- SECTION 3: PESTICIDE PRODUCT & DOWNWIND RECEPTOR -->
+      <section class="control-card">
+        <div class="control-card-header">
+          <span class="control-card-title">3. EPA Label &amp; Buffer Check</span>
+          <span class="micro-badge cobalt" id="bufferBadge">25 ft Buffer</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="productSelect">Pesticide Product (EPA Reg.)</label>
+          <select id="productSelect">
+            <option value="stylet_oil">JMS Stylet-Oil (EPA 65564-1 · Oil)</option>
+            <option value="brigade_2ec">Brigade 2EC (EPA 279-3313 · RUP Pyrethroid)</option>
+            <option value="microthiol">Microthiol Disperss (EPA 70506-187 · Sulfur)</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="receptorSelect">Downwind Sensitive Receptor</label>
+          <select id="receptorSelect">
+            <option value="open_ag">Open Agricultural Block (Standard)</option>
+            <option value="surface_water">Surface Water / Irrigation Canal</option>
+            <option value="residential">Residential / School / Public Road</option>
+            <option value="sensitive_crop">Sensitive Neighboring / Organic Crop</option>
+          </select>
+        </div>
+
+        <div class="info-callout" id="productRuleNote">
+          Cutoff ≤35°F or ≥90°F · Advisory ≥85°F · Low-RH alert ≤30% · 25 ft buffer.
+        </div>
+      </section>
+    </aside>
+
+    <!-- RIGHT WORKSPACE: 3 STREAMLINED ZONES -->
+    <main class="main-workspace">
+      <!-- ZONE 1: GROWER SPRAY DECISION HERO BANNER -->
+      <section class="verdict-hero state-stop" id="verdictBanner" aria-live="polite">
+        <div class="verdict-top-row">
+          <div style="flex: 1; min-width: 260px;">
+            <div class="verdict-kicker">Grower Spray Decision — Should You Spray Right Now?</div>
+            <h1 class="verdict-title" id="verdictTitle">NO — DO NOT SPRAY</h1>
+            <p class="verdict-subtitle" id="verdictSubtitle">
+              Warm air above the treetops (+5.0°F inversion) and 8.0 mph wind shear will trap spray droplets and push drift off-target.
+            </p>
+            <div class="verdict-chips" id="verdictChipsRow"></div>
+          </div>
+
+          <div class="outlook-box">
+            <div class="outlook-label">+12h Spray Window Outlook</div>
+            <div class="outlook-text" id="outlookSummaryBox">
+              Inversion expected to break by +3h (09:00 PT) as surface heating mixes the canopy column.
+            </div>
+          </div>
+        </div>
+
+        <div class="comparison-split" id="comparisonSplitGrid" style="grid-template-columns: 1fr;">
+          <!-- Optional Conventional Single-Sensor Card -->
+          <div class="comp-col" id="singleCompCol" style="display: none;">
+            <div class="comp-header">
+              <div>
+                <div class="comp-label">Conventional Single Sensor</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);" id="singleMastSub">5.0 ft sub-canopy only</div>
+              </div>
+              <span class="status-pill pill-single-pass" id="singleResultPill">LOWER NODE PASS</span>
+            </div>
+            <div class="comp-detail" id="singleSummaryText">
+              Lower node looks nominal (58.0°F, 4.0 mph), but vertical profile above canopy is NOT MEASURED.
+            </div>
+          </div>
+
+          <!-- Primary CanopyClear Dual-Sensor Card -->
+          <div class="comp-col" id="dualCompCol">
+            <div class="comp-header">
+              <div>
+                <div class="comp-label">CanopyClear Dual-Sensor System</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);" id="dualMastSub">5.0 ft + 26.5 ft vertical profile</div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <button type="button" class="btn-compact" id="inlineSingleToggleBtn" style="min-height: 24px; padding: 2px 8px; font-size: 0.69rem;">+ Compare 1-Sensor</button>
+                <span class="micro-badge crimson" id="comparisonBadge" style="display: none;">BLIND SPOT CAUGHT</span>
+                <span class="status-pill pill-stop" id="dualResultPill">STATUS: STOP</span>
+              </div>
+            </div>
+            <div class="comp-detail" id="dualSummaryText">
+              Upper node caught +5.0°F inversion, 8.0 mph wind shear, and 60° directional twist across the crown.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ZONE 2: ELEVATION VISUALIZATION + DIURNAL FORECAST SPARKLINE -->
+      <section class="zone-visual-grid">
+        <div class="panel-card">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">True-Scale Orchard Boundary-Layer Elevation</div>
+              <div class="panel-sub" id="elevationPanelSub">Lower sub-canopy &amp; upper above-canopy sensor mast telemetry</div>
+            </div>
+            <span class="micro-badge">True Vertical Scale</span>
+          </div>
+          <div class="svg-frame">
+            <svg id="elevationSvg" viewBox="0 0 640 256" role="img" aria-label="True-scale orchard elevation and dual-sensor mast diagram"></svg>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Diurnal &amp; Seasonal Progression (+0h to +12h)</div>
+              <div class="panel-sub" id="forecastPanelSub">Projected lower and upper canopy temperature profile (+0h to +12h)</div>
+            </div>
+            <span class="micro-badge cobalt" id="forecastBadgeText">Vertical Temp Profile</span>
+          </div>
+
+          <div class="forecast-strip" id="forecastStrip"></div>
+
+          <div class="svg-frame">
+            <svg id="forecastSparklineSvg" viewBox="0 0 420 116" role="img" aria-label="12-hour boundary-layer temperature forecast chart"></svg>
+          </div>
+
+          <div style="font-size: 0.72rem; color: var(--text-secondary);" id="seasonalPhysicsNote">
+            Diurnal boundary-layer model: nocturnal inversions typically erode 2–3 hours after sunrise as surface heating mixes the canopy.
+          </div>
+        </div>
+      </section>
+
+      <!-- ZONE 3: FILTERABLE DIAGNOSTIC & EPA LABEL AUDIT TABLE -->
+      <section class="zone-audit">
+        <div class="audit-toolbar">
+          <div>
+            <div class="panel-title" id="auditPanelTitle">CanopyClear Gate &amp; Automatic EPA Label Audit</div>
+            <div class="panel-sub" id="auditPanelSub">Vertical boundary-layer, mast geometry, and automatic EPA label verification</div>
+          </div>
+
+          <div class="filter-tabs" role="tablist" aria-label="Audit Table Filter">
+            <button type="button" class="tab-btn active" data-filter="all">All Gates (<span id="countAll">10</span>)</button>
+            <button type="button" class="tab-btn" data-filter="alerts"><span id="auditAlertTabLabel">Alerts &amp; Limits</span> (<span id="countAlerts">0</span>)</button>
+            <button type="button" class="tab-btn" data-filter="label">EPA Label &amp; Limitations (<span id="countLabel">4</span>)</button>
+          </div>
+        </div>
+
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr id="auditTableHeadRow">
+                <th>Atmospheric / Label Gate</th>
+                <th>Dual-Sensor Input</th>
+                <th>CanopyClear Result</th>
+              </tr>
+            </thead>
+            <tbody id="auditTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* =========================================================================
+       * 1. DOMAIN DATABASES (CROPS, PESTICIDES, PRESET SCENARIOS)
+       * ========================================================================= */
+      const CROP_MODELS = {
+        almond: {
+          name: 'Almond (Central Valley Standard)',
+          shortName: 'Almond',
+          minH: 6.5,
+          maxH: 19.5,
+          maturityAge: 13,
+          uncertaintyFt: 1.5,
+          crownShape: 'oval'
+        },
+        walnut: {
+          name: 'Walnut (Tall Hedgerow)',
+          shortName: 'Walnut',
+          minH: 8.0,
+          maxH: 28.0,
+          maturityAge: 15,
+          uncertaintyFt: 2.0,
+          crownShape: 'oval'
+        },
+        pistachio: {
+          name: 'Pistachio (Open Vase)',
+          shortName: 'Pistachio',
+          minH: 6.0,
+          maxH: 18.0,
+          maturityAge: 14,
+          uncertaintyFt: 1.5,
+          crownShape: 'oval'
+        },
+        stone_fruit: {
+          name: 'Stone Fruit — Peach/Nectarine',
+          shortName: 'Stone Fruit',
+          minH: 5.5,
+          maxH: 13.5,
+          maturityAge: 9,
+          uncertaintyFt: 1.0,
+          crownShape: 'oval'
+        },
+        citrus: {
+          name: 'Citrus — Navel/Mandarin',
+          shortName: 'Citrus',
+          minH: 5.0,
+          maxH: 15.0,
+          maturityAge: 12,
+          uncertaintyFt: 1.2,
+          crownShape: 'oval'
+        },
+        grape: {
+          name: 'Table/Wine Grape (High-Wire Trellis)',
+          shortName: 'Grape',
+          minH: 5.5,
+          maxH: 7.5,
+          maturityAge: 5,
+          uncertaintyFt: 0.8,
+          crownShape: 'trellis'
+        }
+      };
+
+      const PESTICIDE_PRODUCTS = {
+        stylet_oil: {
+          name: 'JMS Stylet-Oil',
+          regNo: '65564-1',
+          eligibleCrops: ['almond', 'walnut', 'pistachio', 'stone_fruit', 'citrus', 'grape'],
+          minTempF: 35,
+          advTempF: 85,
+          maxTempF: 90,
+          minRhCaution: 30,
+          advWindMph: 8.5,
+          maxWindMph: 10.0,
+          shearCautionMph: 4.0,
+          shearStopMph: 6.5,
+          twistCautionDeg: 40,
+          twistStopDeg: 65,
+          aquaticBufferFt: 25,
+          ruleSummary: 'Cutoff ≤35°F or ≥90°F · Advisory ≥85°F · Low-RH alert ≤30% · 25 ft buffer.'
+        },
+        brigade_2ec: {
+          name: 'Brigade 2EC (RUP)',
+          regNo: '279-3313',
+          eligibleCrops: ['almond', 'walnut', 'pistachio', 'stone_fruit', 'citrus', 'grape'],
+          minTempF: 38,
+          advTempF: 88,
+          maxTempF: 95,
+          minRhCaution: 32,
+          advWindMph: 7.5,
+          maxWindMph: 10.0,
+          shearCautionMph: 3.0,
+          shearStopMph: 5.0,
+          twistCautionDeg: 30,
+          twistStopDeg: 55,
+          aquaticBufferFt: 150,
+          ruleSummary: 'RUP Pyrethroid · Mandatory 150 ft aquatic buffer · Strict canopy shear (≥5.0 mph) & twist (≥55°) stops.'
+        },
+        microthiol: {
+          name: 'Microthiol Disperss',
+          regNo: '70506-187',
+          eligibleCrops: ['almond', 'pistachio', 'stone_fruit', 'citrus', 'grape'],
+          minTempF: 40,
+          advTempF: 80,
+          maxTempF: 85,
+          minRhCaution: 40,
+          advWindMph: 8.0,
+          maxWindMph: 10.0,
+          shearCautionMph: 4.0,
+          shearStopMph: 6.5,
+          twistCautionDeg: 40,
+          twistStopDeg: 65,
+          aquaticBufferFt: 50,
+          ruleSummary: 'Prohibited on Walnut · Heat stop ≥85°F (Advisory ≥80°F) · Low-RH alert ≤40% · 50 ft buffer.'
+        }
+      };
+
+      const RECEPTOR_TYPES = {
+        open_ag: { name: 'Open Agricultural Block', sensitive: false },
+        surface_water: { name: 'Surface Water / Irrigation Canal', sensitive: true, isAquatic: true },
+        residential: { name: 'Residential / School / Public Road', sensitive: true, isAquatic: false },
+        sensitive_crop: { name: 'Sensitive Neighboring / Organic Crop', sensitive: true, isAquatic: false }
+      };
+
+      const PRESET_SCENARIOS = {
+        ground_illusion: {
+          label: 'Ground Illusion',
+          startHour: 6,
+          lowerTempF: 58.0,
+          upperTempF: 63.0,
+          lowerWindMph: 4.0,
+          upperWindMph: 12.0,
+          lowerDirDeg: 140,
+          upperDirDeg: 200,
+          rhPct: 74,
+          upperOffline: false,
+          note: 'Calm orchard floor masks a +5.0°F warm-air inversion and 12.0 mph crosswind aloft; nocturnal cap erodes by mid-morning.'
+        },
+        clear_window: {
+          label: 'Clear Window',
+          startHour: 9,
+          lowerTempF: 66.5,
+          upperTempF: 65.2,
+          lowerWindMph: 4.6,
+          upperWindMph: 6.4,
+          lowerDirDeg: 155,
+          upperDirDeg: 168,
+          rhPct: 62,
+          upperOffline: false,
+          note: 'Well-mixed morning lapse (-1.3°F ΔT) with steady, aligned airflow across both lower and upper canopy nodes.'
+        },
+        wind_shear: {
+          label: 'Wind Shear',
+          startHour: 16,
+          lowerTempF: 74.0,
+          upperTempF: 72.8,
+          lowerWindMph: 3.5,
+          upperWindMph: 9.8,
+          lowerDirDeg: 130,
+          upperDirDeg: 195,
+          rhPct: 48,
+          upperOffline: false,
+          note: 'Strong 6.3 mph wind-speed shear and 65° directional twist across the treetops can shear fine droplets off-target.'
+        },
+        summer_heat: {
+          label: 'Summer Heat',
+          startHour: 14,
+          lowerTempF: 91.5,
+          upperTempF: 89.2,
+          lowerWindMph: 5.5,
+          upperWindMph: 8.2,
+          lowerDirDeg: 310,
+          upperDirDeg: 325,
+          rhPct: 24,
+          upperOffline: false,
+          note: 'High afternoon heat (>90°F) and 24% relative humidity cause rapid droplet evaporation and phytotoxicity risk.'
+        },
+        high_wind: {
+          label: 'High Wind',
+          startHour: 15,
+          lowerTempF: 71.0,
+          upperTempF: 69.5,
+          lowerWindMph: 7.4,
+          upperWindMph: 14.5,
+          lowerDirDeg: 305,
+          upperDirDeg: 318,
+          rhPct: 45,
+          upperOffline: false,
+          note: 'Free-stream upper wind (14.5 mph) exceeds maximum spray drift thresholds even though sub-canopy wind reads 7.4 mph.'
+        },
+        upper_offline: {
+          label: 'Sensor Offline',
+          startHour: 7,
+          lowerTempF: 61.0,
+          upperTempF: null,
+          lowerWindMph: 4.2,
+          upperWindMph: null,
+          lowerDirDeg: 150,
+          upperDirDeg: null,
+          rhPct: 70,
+          upperOffline: true,
+          note: 'Upper above-canopy mast node is offline; CanopyClear enforces a fail-safe HOLD rather than guessing aloft safety.'
+        }
+      };
+
+      /* =========================================================================
+       * 2. APPLICATION STATE
+       * ========================================================================= */
+      const state = {
+        scenario: 'ground_illusion',
+        forecastOffsetHr: 0,
+        isPlaying: false,
+        playTimer: null,
+
+        crop: 'almond',
+        treeAgeYrs: 11,
+        canopyHeightFt: 17.5,
+        canopyManuallySet: false,
+        lowSensorFt: 5.0,
+        highSensorFt: 26.5,
+
+        product: 'stylet_oil',
+        receptor: 'open_ag',
+        auditFilter: 'all',
+        showSingleSensor: false
+      };
+
+      /* =========================================================================
+       * 3. BOUNDARY-LAYER & GEOMETRY PHYSICS HELPERS
+       * ========================================================================= */
+      function getCanopyUncertaintyFt() {
+        if (state.canopyManuallySet) return 1.0;
+        const crop = CROP_MODELS[state.crop] || CROP_MODELS.almond;
+        return crop.uncertaintyFt;
+      }
+
+      function computeCurveCanopyHeight(cropKey, ageYrs) {
+        const crop = CROP_MODELS[cropKey] || CROP_MODELS.almond;
+        const ratio = Math.max(0, Math.min(1, ageYrs / crop.maturityAge));
+        const h = crop.minH + (crop.maxH - crop.minH) * ratio;
+        return Math.round(h * 10) / 10;
+      }
+
+      function computeRecommendedMastBand() {
+        const uncFt = getCanopyUncertaintyFt();
+        const estTop = Math.round((state.canopyHeightFt + uncFt) * 10) / 10;
+        const bandMin = Math.round((estTop + 6.0) * 10) / 10;
+        const bandMax = Math.round((estTop + 10.0) * 10) / 10;
+        const optimalFt = Math.round((estTop + 8.0) * 10) / 10;
+        return { estTop, bandMin, bandMax, optimalFt };
+      }
+
+      function angularDiffDeg(degA, degB) {
+        if (degA === null || degB === null || degA === undefined || degB === undefined) return 0;
+        const diff = Math.abs(((degA - degB) % 360 + 360) % 360);
+        return diff > 180 ? 360 - diff : diff;
+      }
+
+      function formatHour(hr24) {
+        const h = ((Math.round(hr24) % 24) + 24) % 24;
+        return `${String(h).padStart(2, '0')}:00`;
+      }
+
+      /* Synthesize hourly lower & upper mast telemetry for offsetHr (0..12) */
+      function getAtmosphereAtOffset(offsetHr) {
+        const sc = PRESET_SCENARIOS[state.scenario] || PRESET_SCENARIOS.ground_illusion;
+        const baseStartHour = sc.startHour;
+        const baseLowT = sc.lowerTempF;
+        const baseHighT = sc.upperTempF;
+        const baseLowW = sc.lowerWindMph;
+        const baseHighW = sc.upperWindMph;
+        const baseLowDir = sc.lowerDirDeg;
+        const baseHighDir = sc.upperDirDeg;
+        const baseRh = sc.rhPct;
+        const upperOffline = sc.upperOffline;
+
+        const localHour = (baseStartHour + offsetHr) % 24;
+        if (offsetHr === 0) {
+          return {
+            offsetHr: 0,
+            localHour,
+            lower: { tempF: baseLowT, windMph: baseLowW, dirDeg: baseLowDir, rhPct: baseRh },
+            upper: upperOffline ? null : { tempF: baseHighT, windMph: baseHighW, dirDeg: baseHighDir },
+            upperOffline
+          };
+        }
+
+        // Diurnal thermal & inversion evolution over +1h..+12h
+        const diurnalSwingF = 24;
+        const dawnInversionBiasF = 3.2;
+        const rad = ((localHour - 6) / 24) * 2 * Math.PI;
+        const baseRad = ((baseStartHour - 6) / 24) * 2 * Math.PI;
+        const diurnalDelta = (Math.sin(rad - 0.35) - Math.sin(baseRad - 0.35)) * (diurnalSwingF * 0.48);
+
+        const lowerTempF = Math.round((baseLowT + diurnalDelta) * 10) / 10;
+
+        // Inversion erodes mid-morning (09:00-16:00) and re-builds after 18:00
+        const initialDeltaT = upperOffline ? 0 : (baseHighT - baseLowT);
+        let targetDeltaT = -1.1;
+        if (localHour >= 19 || localHour <= 6) {
+          targetDeltaT = dawnInversionBiasF;
+        } else if (localHour === 7) {
+          targetDeltaT = dawnInversionBiasF * 0.65;
+        } else if (localHour === 8) {
+          targetDeltaT = dawnInversionBiasF * 0.25;
+        } else if (localHour === 18) {
+          targetDeltaT = 0.6;
+        }
+
+        const blend = Math.min(1, offsetHr / 3.2);
+        const effDeltaT = initialDeltaT * (1 - blend) + targetDeltaT * blend;
+        const upperTempF = upperOffline ? null : Math.round((lowerTempF + effDeltaT) * 10) / 10;
+
+        const afternoonBreeze = (localHour >= 13 && localHour <= 19) ? 2.4 : 0.4;
+        const lowerWindMph = Math.round(Math.max(1.2, baseLowW + afternoonBreeze * 0.45 * blend) * 10) / 10;
+        const upperWindMph = upperOffline
+          ? null
+          : Math.round(Math.max(2.0, baseHighW * (1 - 0.22 * blend) + afternoonBreeze * blend) * 10) / 10;
+
+        const dirConverge = Math.round(angularDiffDeg(baseLowDir, baseHighDir) * 0.55 * blend);
+        const upperDirDeg = upperOffline ? null : (baseHighDir - dirConverge + 360) % 360;
+        const rhPct = Math.round(Math.max(16, Math.min(96, baseRh - diurnalDelta * 1.15)));
+
+        return {
+          offsetHr,
+          localHour,
+          lower: { tempF: lowerTempF, windMph: lowerWindMph, dirDeg: baseLowDir, rhPct },
+          upper: upperOffline ? null : { tempF: upperTempF, windMph: upperWindMph, dirDeg: upperDirDeg },
+          upperOffline
+        };
+      }
+
+      /* =========================================================================
+       * 4. CORE DECISION & EPA LABEL AUDIT ENGINE
+       * ========================================================================= */
+      function evaluateGatesAtOffset(offsetHr) {
+        const atm = getAtmosphereAtOffset(offsetHr);
+        const sc = PRESET_SCENARIOS[state.scenario] || PRESET_SCENARIOS.ground_illusion;
+        const crop = CROP_MODELS[state.crop] || CROP_MODELS.almond;
+        const prod = PESTICIDE_PRODUCTS[state.product] || PESTICIDE_PRODUCTS.stylet_oil;
+        const recp = RECEPTOR_TYPES[state.receptor] || RECEPTOR_TYPES.open_ag;
+
+        const uncFt = getCanopyUncertaintyFt();
+        const rec = computeRecommendedMastBand();
+        const effectiveClearanceFt = state.highSensorFt - rec.estTop;
+        const hasUpper = !atm.upperOffline && atm.upper !== null;
+
+        const deltaT = hasUpper ? Math.round((atm.upper.tempF - atm.lower.tempF) * 10) / 10 : null;
+        const speedShear = hasUpper ? Math.round(Math.abs(atm.upper.windMph - atm.lower.windMph) * 10) / 10 : null;
+        const dirTwist = hasUpper ? angularDiffDeg(atm.lower.dirDeg, atm.upper.dirDeg) : null;
+
+        const rows = [];
+        const stopReasons = [];
+        const cautionReasons = [];
+        const unknownReasons = [];
+
+        // 1. Vertical Thermal Inversion (ΔT)
+        if (!hasUpper) {
+          unknownReasons.push('Upper mast telemetry offline');
+          rows.push({
+            category: 'atm',
+            gate: 'Vertical Thermal Inversion (ΔT)',
+            singleIn: `${atm.lower.tempF.toFixed(1)}°F floor`,
+            singleRes: 'UNMONITORED',
+            singleTag: 'blind',
+            dualIn: 'Upper Node Offline',
+            dualRes: 'UNKNOWN (HOLD)',
+            dualTag: 'unknown'
+          });
+        } else if (deltaT >= 1.0) {
+          stopReasons.push(`+${deltaT.toFixed(1)}°F temperature inversion trapping spray above canopy`);
+          rows.push({
+            category: 'atm',
+            gate: 'Vertical Thermal Inversion (ΔT)',
+            singleIn: `${atm.lower.tempF.toFixed(1)}°F floor`,
+            singleRes: 'BLIND SPOT',
+            singleTag: 'blind',
+            dualIn: `+${deltaT.toFixed(1)}°F (${atm.lower.tempF.toFixed(1)}→${atm.upper.tempF.toFixed(1)}°F)`,
+            dualRes: 'STOP (INVERSION)',
+            dualTag: 'stop'
+          });
+        } else if (deltaT >= 0.5) {
+          cautionReasons.push(`Developing +${deltaT.toFixed(1)}°F thermal cap`);
+          rows.push({
+            category: 'atm',
+            gate: 'Vertical Thermal Inversion (ΔT)',
+            singleIn: `${atm.lower.tempF.toFixed(1)}°F floor`,
+            singleRes: 'BLIND SPOT',
+            singleTag: 'blind',
+            dualIn: `+${deltaT.toFixed(1)}°F (${atm.lower.tempF.toFixed(1)}→${atm.upper.tempF.toFixed(1)}°F)`,
+            dualRes: 'CAUTION',
+            dualTag: 'caution'
+          });
+        } else {
+          rows.push({
+            category: 'atm',
+            gate: 'Vertical Thermal Inversion (ΔT)',
+            singleIn: `${atm.lower.tempF.toFixed(1)}°F floor`,
+            singleRes: 'BLIND SPOT',
+            singleTag: 'blind',
+            dualIn: `${deltaT >= 0 ? '+' : ''}${deltaT.toFixed(1)}°F (Neutral/Lapse)`,
+            dualRes: 'PASS',
+            dualTag: 'pass'
+          });
+        }
+
+        // 2. Upper Free-Stream Wind Speed
+        if (!hasUpper) {
+          rows.push({
+            category: 'atm',
+            gate: 'Above-Canopy Wind Speed',
+            singleIn: `${atm.lower.windMph.toFixed(1)} mph floor`,
+            singleRes: 'UNMONITORED',
+            singleTag: 'blind',
+            dualIn: 'Upper Node Offline',
+            dualRes: 'UNKNOWN (HOLD)',
+            dualTag: 'unknown'
+          });
+        } else if (atm.upper.windMph > prod.maxWindMph) {
+          stopReasons.push(`Upper wind ${atm.upper.windMph.toFixed(1)} mph exceeds ${prod.maxWindMph.toFixed(1)} mph cap`);
+          rows.push({
+            category: 'atm',
+            gate: 'Above-Canopy Wind Speed',
+            singleIn: `${atm.lower.windMph.toFixed(1)} mph floor`,
+            singleRes: atm.lower.windMph <= prod.maxWindMph ? 'BLIND SPOT' : 'STOP',
+            singleTag: atm.lower.windMph <= prod.maxWindMph ? 'blind' : 'stop',
+            dualIn: `${atm.upper.windMph.toFixed(1)} mph @ ${state.highSensorFt.toFixed(1)} ft`,
+            dualRes: 'STOP (HIGH WIND)',
+            dualTag: 'stop'
+          });
+        } else if (atm.upper.windMph > prod.advWindMph || atm.upper.windMph < 2.0) {
+          const why = atm.upper.windMph < 2.0 ? 'Stagnant dead-calm air (<2.0 mph)' : `Elevated upper wind (${atm.upper.windMph.toFixed(1)} mph)`;
+          cautionReasons.push(why);
+          rows.push({
+            category: 'atm',
+            gate: 'Above-Canopy Wind Speed',
+            singleIn: `${atm.lower.windMph.toFixed(1)} mph floor`,
+            singleRes: 'BLIND SPOT',
+            singleTag: 'blind',
+            dualIn: `${atm.upper.windMph.toFixed(1)} mph @ ${state.highSensorFt.toFixed(1)} ft`,
+            dualRes: 'CAUTION',
+            dualTag: 'caution'
+          });
+        } else {
+          rows.push({
+            category: 'atm',
+            gate: 'Above-Canopy Wind Speed',
+            singleIn: `${atm.lower.windMph.toFixed(1)} mph floor`,
+            singleRes: 'PASS',
+            singleTag: 'pass',
+            dualIn: `${atm.upper.windMph.toFixed(1)} mph @ ${state.highSensorFt.toFixed(1)} ft`,
+            dualRes: 'PASS',
+            dualTag: 'pass'
+          });
+        }
+
+        // 3. Sub-Canopy Ground Wind
+        let singleWindStatus = 'GO';
+        if (atm.lower.windMph > prod.maxWindMph) {
+          singleWindStatus = 'STOP';
+          stopReasons.push(`Ground wind ${atm.lower.windMph.toFixed(1)} mph exceeds limit`);
+          rows.push({
+            category: 'atm',
+            gate: 'Sub-Canopy Ground Wind',
+            singleIn: `${atm.lower.windMph.toFixed(1)} mph`,
+            singleRes: 'STOP',
+            singleTag: 'stop',
+            dualIn: `${atm.lower.windMph.toFixed(1)} mph @ ${state.lowSensorFt.toFixed(1)} ft`,
+            dualRes: 'STOP',
+            dualTag: 'stop'
+          });
+        } else if (atm.lower.windMph < 1.5 || atm.lower.windMph > prod.advWindMph) {
+          singleWindStatus = 'CAUTION';
+          cautionReasons.push(`Sub-canopy wind ${atm.lower.windMph.toFixed(1)} mph outside ideal 2–${prod.advWindMph} mph range`);
+          rows.push({
+            category: 'atm',
+            gate: 'Sub-Canopy Ground Wind',
+            singleIn: `${atm.lower.windMph.toFixed(1)} mph`,
+            singleRes: 'CAUTION',
+            singleTag: 'caution',
+            dualIn: `${atm.lower.windMph.toFixed(1)} mph @ ${state.lowSensorFt.toFixed(1)} ft`,
+            dualRes: 'CAUTION',
+            dualTag: 'caution'
+          });
+        } else {
+          rows.push({
+            category: 'atm',
+            gate: 'Sub-Canopy Ground Wind',
+            singleIn: `${atm.lower.windMph.toFixed(1)} mph`,
+            singleRes: 'PASS',
+            singleTag: 'pass',
+            dualIn: `${atm.lower.windMph.toFixed(1)} mph @ ${state.lowSensorFt.toFixed(1)} ft`,
+            dualRes: 'PASS',
+            dualTag: 'pass'
+          });
+        }
+
+        // 4. Canopy Wind-Speed Shear
+        if (!hasUpper) {
+          rows.push({
+            category: 'atm',
+            gate: 'Canopy Wind-Speed Shear',
+            singleIn: 'Single point only',
+            singleRes: 'UNMONITORED',
+            singleTag: 'blind',
+            dualIn: 'Upper Node Offline',
+            dualRes: 'UNKNOWN',
+            dualTag: 'unknown'
+          });
+        } else if (speedShear >= prod.shearStopMph) {
+          stopReasons.push(`${speedShear.toFixed(1)} mph wind shear across crown`);
+          rows.push({
+            category: 'atm',
+            gate: 'Canopy Wind-Speed Shear',
+            singleIn: 'Single point only',
+            singleRes: 'BLIND SPOT',
+            singleTag: 'blind',
+            dualIn: `${speedShear.toFixed(1)} mph ΔWind`,
+            dualRes: 'STOP (SHEAR)',
+            dualTag: 'stop'
+          });
+        } else if (speedShear >= prod.shearCautionMph) {
+          cautionReasons.push(`${speedShear.toFixed(1)} mph moderate wind shear`);
+          rows.push({
+            category: 'atm',
+            gate: 'Canopy Wind-Speed Shear',
+            singleIn: 'Single point only',
+            singleRes: 'BLIND SPOT',
+            singleTag: 'blind',
+            dualIn: `${speedShear.toFixed(1)} mph ΔWind`,
+            dualRes: 'CAUTION',
+            dualTag: 'caution'
+          });
+        } else {
+          rows.push({
+            category: 'atm',
+            gate: 'Canopy Wind-Speed Shear',
+            singleIn: 'Single point only',
+            singleRes: 'BLIND SPOT',
+            singleTag: 'blind',
+            dualIn: `${speedShear.toFixed(1)} mph ΔWind`,
+            dualRes: 'PASS',
+            dualTag: 'pass'
+          });
+        }
+
+        // 5. Canopy Directional Twist
+        if (!hasUpper) {
+          rows.push({
+            category: 'atm',
+            gate: 'Canopy Directional Twist',
+            singleIn: `${atm.lower.dirDeg}° only`,
+            singleRes: 'UNMONITORED',
+            singleTag: 'blind',
+            dualIn: 'Upper Node Offline',
+            dualRes: 'UNKNOWN',
+            dualTag: 'unknown'
+          });
+        } else if (dirTwist >= prod.twistStopDeg) {
+          stopReasons.push(`${dirTwist}° wind direction twist above canopy`);
+          rows.push({
+            category: 'atm',
+            gate: 'Canopy Directional Twist',
+            singleIn: `${atm.lower.dirDeg}° only`,
+            singleRes: 'BLIND SPOT',
+            singleTag: 'blind',
+            dualIn: `${dirTwist}° (${atm.lower.dirDeg}°→${atm.upper.dirDeg}°)`,
+            dualRes: 'STOP (TWIST)',
+            dualTag: 'stop'
+          });
+        } else if (dirTwist >= prod.twistCautionDeg) {
+          cautionReasons.push(`${dirTwist}° directional wind shift aloft`);
+          rows.push({
+            category: 'atm',
+            gate: 'Canopy Directional Twist',
+            singleIn: `${atm.lower.dirDeg}° only`,
+            singleRes: 'BLIND SPOT',
+            singleTag: 'blind',
+            dualIn: `${dirTwist}° (${atm.lower.dirDeg}°→${atm.upper.dirDeg}°)`,
+            dualRes: 'CAUTION',
+            dualTag: 'caution'
+          });
+        } else {
+          rows.push({
+            category: 'atm',
+            gate: 'Canopy Directional Twist',
+            singleIn: `${atm.lower.dirDeg}° only`,
+            singleRes: 'BLIND SPOT',
+            singleTag: 'blind',
+            dualIn: `${dirTwist}° (${atm.lower.dirDeg}°→${atm.upper.dirDeg}°)`,
+            dualRes: 'PASS',
+            dualTag: 'pass'
+          });
+        }
+
+        // 6. Upper-Mast Crown Clearance
+        if (effectiveClearanceFt < 4.0) {
+          unknownReasons.push(`Upper sensor (${state.highSensorFt.toFixed(1)} ft) is inside/too close to canopy crown (${rec.estTop.toFixed(1)} ft)`);
+          rows.push({
+            category: 'atm',
+            gate: 'Upper-Mast Crown Clearance',
+            singleIn: 'No upper mast',
+            singleRes: 'N/A',
+            singleTag: 'blind',
+            dualIn: `+${effectiveClearanceFt.toFixed(1)} ft (Need 6–10 ft)`,
+            dualRes: 'UNKNOWN (WAKE)',
+            dualTag: 'unknown'
+          });
+        } else if (effectiveClearanceFt < 6.0 || effectiveClearanceFt > 12.0) {
+          cautionReasons.push(`Upper mast clearance (+${effectiveClearanceFt.toFixed(1)} ft) outside ideal 6–10 ft band`);
+          rows.push({
+            category: 'atm',
+            gate: 'Upper-Mast Crown Clearance',
+            singleIn: 'No upper mast',
+            singleRes: 'N/A',
+            singleTag: 'blind',
+            dualIn: `+${effectiveClearanceFt.toFixed(1)} ft above crown`,
+            dualRes: 'CAUTION',
+            dualTag: 'caution'
+          });
+        } else {
+          rows.push({
+            category: 'atm',
+            gate: 'Upper-Mast Crown Clearance',
+            singleIn: 'No upper mast',
+            singleRes: 'N/A',
+            singleTag: 'blind',
+            dualIn: `+${effectiveClearanceFt.toFixed(1)} ft (Target 6–10 ft)`,
+            dualRes: 'PASS',
+            dualTag: 'pass'
+          });
+        }
+
+        // 7. EPA Crop Eligibility & Registration
+        const cropAllowed = prod.eligibleCrops.includes(state.crop);
+        if (!cropAllowed) {
+          stopReasons.push(`${prod.name} is prohibited on ${crop.shortName} (EPA Reg. ${prod.regNo})`);
+        }
+        rows.push({
+          category: 'label',
+          gate: 'EPA Crop Eligibility & Label',
+          singleIn: `${crop.shortName} · ${prod.regNo}`,
+          singleRes: cropAllowed ? 'PASS' : 'STOP (LABEL)',
+          singleTag: cropAllowed ? 'pass' : 'stop',
+          dualIn: `${crop.shortName} · ${prod.regNo}`,
+          dualRes: cropAllowed ? 'PASS' : 'STOP (LABEL)',
+          dualTag: cropAllowed ? 'pass' : 'stop'
+        });
+
+        // 8. EPA Inversion Prohibition Rule
+        const invLabelBlocked = hasUpper && deltaT >= 1.0;
+        rows.push({
+          category: 'label',
+          gate: 'EPA Inversion Prohibition Rule',
+          singleIn: 'Floor temp only',
+          singleRes: 'UNVERIFIED',
+          singleTag: 'blind',
+          dualIn: hasUpper ? `ΔT ${deltaT >= 0 ? '+' : ''}${deltaT.toFixed(1)}°F` : 'Upper Offline',
+          dualRes: !hasUpper ? 'UNKNOWN' : (invLabelBlocked ? 'STOP (PROHIBITED)' : 'PASS'),
+          dualTag: !hasUpper ? 'unknown' : (invLabelBlocked ? 'stop' : 'pass')
+        });
+
+        // 9. Product Temp & Relative Humidity Ceilings
+        const peakTemp = hasUpper ? Math.max(atm.lower.tempF, atm.upper.tempF) : atm.lower.tempF;
+        const lowTemp = hasUpper ? Math.min(atm.lower.tempF, atm.upper.tempF) : atm.lower.tempF;
+        let tempRhStatus = 'PASS';
+        let tempRhTag = 'pass';
+        let singleTempStatus = 'PASS';
+        let singleTempTag = 'pass';
+
+        if (peakTemp >= prod.maxTempF || lowTemp <= prod.minTempF) {
+          tempRhStatus = 'STOP (TEMP CUTOFF)';
+          tempRhTag = 'stop';
+          stopReasons.push(`Temperature (${peakTemp.toFixed(1)}°F) violates ${prod.name} label limits (${prod.minTempF}–${prod.maxTempF}°F)`);
+        } else if (peakTemp >= prod.advTempF || atm.lower.rhPct <= prod.minRhCaution) {
+          tempRhStatus = 'CAUTION (HEAT/RH)';
+          tempRhTag = 'caution';
+          cautionReasons.push(
+            atm.lower.rhPct <= prod.minRhCaution
+              ? `Low humidity (${atm.lower.rhPct}% RH ≤ ${prod.minRhCaution}%) increases droplet evaporation`
+              : `Elevated temperature (${peakTemp.toFixed(1)}°F ≥ ${prod.advTempF}°F advisory)`
+          );
+        }
+
+        if (atm.lower.tempF >= prod.maxTempF || atm.lower.tempF <= prod.minTempF) {
+          singleTempStatus = 'STOP';
+          singleTempTag = 'stop';
+        } else if (atm.lower.tempF >= prod.advTempF || atm.lower.rhPct <= prod.minRhCaution) {
+          singleTempStatus = 'CAUTION';
+          singleTempTag = 'caution';
+        }
+
+        rows.push({
+          category: 'label',
+          gate: 'Label Temp & Humidity Ceilings',
+          singleIn: `${atm.lower.tempF.toFixed(1)}°F · ${atm.lower.rhPct}% RH`,
+          singleRes: singleTempStatus,
+          singleTag: singleTempTag,
+          dualIn: `${peakTemp.toFixed(1)}°F peak · ${atm.lower.rhPct}% RH`,
+          dualRes: tempRhStatus,
+          dualTag: tempRhTag
+        });
+
+        // 10. Downwind Receptor & Mandatory Buffer
+        let bufStatus = 'PASS';
+        let bufTag = 'pass';
+        if (recp.sensitive) {
+          const aloftDriftRisk = hasUpper && (atm.upper.windMph >= 7.5 || dirTwist >= 30 || deltaT >= 0.5);
+          if (recp.isAquatic && prod.aquaticBufferFt >= 100 && aloftDriftRisk) {
+            bufStatus = `STOP (${prod.aquaticBufferFt}FT BUFFER)`;
+            bufTag = 'stop';
+            stopReasons.push(`Mandatory ${prod.aquaticBufferFt} ft aquatic buffer at risk from upper-canopy drift`);
+          } else if (aloftDriftRisk) {
+            bufStatus = `CAUTION (${prod.aquaticBufferFt}FT BUF)`;
+            bufTag = 'caution';
+            cautionReasons.push(`Sensitive receptor downwind (${prod.aquaticBufferFt} ft buffer requires crosswind verification)`);
+          } else {
+            bufStatus = `PASS (${prod.aquaticBufferFt}FT BUF)`;
+            bufTag = 'pass';
+          }
+        }
+
+        rows.push({
+          category: 'label',
+          gate: 'Downwind Receptor & Buffer',
+          singleIn: `${recp.name}`,
+          singleRes: recp.sensitive ? 'CHECK BUFFER' : 'PASS',
+          singleTag: recp.sensitive ? 'caution' : 'pass',
+          dualIn: `${prod.aquaticBufferFt} ft · ${recp.name}`,
+          dualRes: bufStatus,
+          dualTag: bufTag
+        });
+
+        // Consolidate Single-Sensor vs Dual-Sensor Verdict
+        let singleStatus = 'GO';
+        if (!cropAllowed || singleWindStatus === 'STOP' || singleTempTag === 'stop') {
+          singleStatus = 'STOP';
+        } else if (singleWindStatus === 'CAUTION' || singleTempTag === 'caution' || recp.sensitive) {
+          singleStatus = 'CAUTION';
+        }
+
+        let dualStatus = 'GO';
+        if (stopReasons.length > 0) {
+          dualStatus = 'STOP';
+        } else if (unknownReasons.length > 0) {
+          dualStatus = 'UNKNOWN';
+        } else if (cautionReasons.length > 0) {
+          dualStatus = 'CAUTION';
+        }
+
+        const isBlindSpot = singleStatus === 'GO' && (dualStatus === 'STOP' || dualStatus === 'CAUTION');
+        const deltaTLabel = deltaT !== null ? `${deltaT >= 0 ? '+' : ''}${deltaT.toFixed(1)}°F` : 'unverified';
+
+        let verdictClass = 'state-go';
+        let verdictTitle = 'YES — SAFE TO SPRAY';
+        let verdictSubtitle = `Boundary layer is well-mixed (${deltaTLabel} ΔT), winds are steady, and all ${prod.name} EPA label checks pass.`;
+
+        if (dualStatus === 'STOP') {
+          verdictClass = 'state-stop';
+          verdictTitle = 'NO — DO NOT SPRAY';
+          verdictSubtitle = `${stopReasons[0]}. Spraying right now risks off-target drift or EPA label violation.`;
+        } else if (dualStatus === 'UNKNOWN') {
+          verdictClass = 'state-unknown';
+          verdictTitle = 'HOLD — VERIFY UPPER SENSOR';
+          verdictSubtitle = `${unknownReasons[0]}. CanopyClear will not clear spraying without valid above-canopy telemetry.`;
+        } else if (dualStatus === 'CAUTION') {
+          verdictClass = 'state-caution';
+          verdictTitle = 'CAUTION — ADJUST & MONITOR';
+          verdictSubtitle = `${cautionReasons[0]}. Use coarse drift-reduction nozzles and verify downwind buffer.`;
+        }
+
+        const chips = [
+          `ΔT: ${deltaTLabel}`,
+          hasUpper ? `Upper Wind: ${atm.upper.windMph.toFixed(1)} mph` : 'Upper Wind: Offline',
+          hasUpper ? `Shear: ${speedShear.toFixed(1)} mph` : 'Shear: N/A',
+          hasUpper ? `Twist: ${dirTwist}°` : 'Twist: N/A',
+          `RH: ${atm.lower.rhPct}%`,
+          `Buffer: ${prod.aquaticBufferFt} ft`
+        ];
+
+        return {
+          atm,
+          sc,
+          crop,
+          prod,
+          recp,
+          uncFt,
+          rec,
+          effectiveClearanceFt,
+          hasUpper,
+          deltaT,
+          speedShear,
+          dirTwist,
+          rows,
+          stopReasons,
+          cautionReasons,
+          unknownReasons,
+          singleStatus,
+          dualStatus,
+          isBlindSpot,
+          verdictClass,
+          verdictTitle,
+          verdictSubtitle,
+          chips
+        };
+      }
+
+      /* Evaluate +0h..+12h forecast horizon to find next safe spray window */
+      function compute12HourOutlook() {
+        const series = [];
+        for (let h = 0; h <= 12; h++) {
+          series.push(evaluateGatesAtOffset(h));
+        }
+
+        const current = series[state.forecastOffsetHr] || series[0];
+        let nextGo = null;
+        let nextCaution = null;
+
+        for (let h = state.forecastOffsetHr + 1; h <= 12; h++) {
+          if (!nextGo && series[h].dualStatus === 'GO') {
+            nextGo = series[h];
+          }
+          if (!nextCaution && series[h].dualStatus === 'CAUTION') {
+            nextCaution = series[h];
+          }
+        }
+
+        let outlookText = '';
+        if (current.dualStatus === 'UNKNOWN') {
+          outlookText = 'Restore upper-mast sensor connection or place node 6–10 ft above canopy crown to unlock automated clearance.';
+        } else if (current.dualStatus === 'GO') {
+          const nextStop = series.slice(state.forecastOffsetHr + 1).find((item) => item.dualStatus === 'STOP');
+          outlookText = nextStop
+            ? `Clear window active now. Conditions degrade to STOP by +${nextStop.atm.offsetHr}h (${formatHour(nextStop.atm.localHour)} PT).`
+            : 'Favorable boundary-layer mixing persists across the remaining 12-hour forecast horizon.';
+        } else if (nextGo) {
+          outlookText = `Safe window opens at +${nextGo.atm.offsetHr}h (${formatHour(nextGo.atm.localHour)} PT) as surface heating mixes the canopy column.`;
+        } else if (nextCaution) {
+          outlookText = `No full GO window in next 12h; marginal CAUTION window appears at +${nextCaution.atm.offsetHr}h (${formatHour(nextCaution.atm.localHour)} PT).`;
+        } else {
+          outlookText = 'Persistent drift, heat, or label restrictions remain active across the entire +12h horizon.';
+        }
+
+        return { series, outlookText };
+      }
+
+      /* =========================================================================
+       * 5. SVG VISUALIZATIONS (TRUE-SCALE ELEVATION & 12-HOUR SPARKLINE)
+       * ========================================================================= */
+      function renderElevationSvg(evalData) {
+        const svg = document.getElementById('elevationSvg');
+        if (!svg) return;
+
+        const { atm, crop, uncFt, rec, effectiveClearanceFt, hasUpper, deltaT, speedShear, dirTwist } = evalData;
+        const maxFt = Math.max(36, Math.ceil((Math.max(state.highSensorFt, rec.bandMax, state.canopyHeightFt + 6) + 4) / 5) * 5);
+
+        const groundY = 224;
+        const topPadY = 20;
+        const plotH = groundY - topPadY;
+        const ftToY = (ft) => groundY - (Math.max(0, Math.min(maxFt, ft)) / maxFt) * plotH;
+
+        const yCanopyTop = ftToY(state.canopyHeightFt);
+        const yUncTop = ftToY(rec.estTop);
+        const yUncBot = ftToY(Math.max(2, state.canopyHeightFt - uncFt));
+        const yBandTop = ftToY(rec.bandMax);
+        const yBandBot = ftToY(rec.bandMin);
+        const yLowNode = ftToY(state.lowSensorFt);
+        const yHighNode = ftToY(state.highSensorFt);
+
+        // Build clean height axis ticks every 10 ft
+        let axisTicksSvg = '';
+        for (let ft = 0; ft <= maxFt; ft += 10) {
+          const y = ftToY(ft);
+          axisTicksSvg += `
+            <line x1="42" y1="${y.toFixed(1)}" x2="50" y2="${y.toFixed(1)}" stroke="#94A3B8" stroke-width="1.2" />
+            <text x="38" y="${(y + 3.5).toFixed(1)}" text-anchor="end" font-size="9.5" font-weight="700" fill="#64748B" font-family="JetBrains Mono, monospace">${ft}ft</text>
+          `;
+        }
+
+        // Optional 1-sensor blind zone highlight in open sky above lower node
+        const blindZoneSvg = state.showSingleSensor
+          ? `<rect x="52" y="${topPadY}" width="348" height="${Math.max(0, yLowNode - topPadY).toFixed(1)}" fill="#FEF3C7" opacity="0.42" />
+             <text x="226" y="${(topPadY + 13).toFixed(1)}" text-anchor="middle" font-size="9" font-weight="800" fill="#B45309">1-SENSOR BLIND ZONE (UNMONITORED ALOFT AIR)</text>`
+          : '';
+
+        // Orchard trees cleanly scoped on the right side (x = 415..620)
+        let treesSvg = '';
+        const treeXs = [455, 525, 592];
+        treeXs.forEach((tx) => {
+          if (crop.crownShape === 'trellis') {
+            const wireY = ftToY(state.canopyHeightFt * 0.72);
+            treesSvg += `
+              <line x1="${tx}" y1="${groundY}" x2="${tx}" y2="${yCanopyTop.toFixed(1)}" stroke="#78350F" stroke-width="4" />
+              <ellipse cx="${tx}" cy="${((yCanopyTop + wireY) / 2).toFixed(1)}" rx="28" ry="${Math.max(8, (wireY - yCanopyTop) * 0.65).toFixed(1)}" fill="#15803D" opacity="0.88" />
+            `;
+          } else {
+            const trunkTopY = groundY - (groundY - yCanopyTop) * 0.34;
+            const crownCenterY = (yCanopyTop + trunkTopY) / 2;
+            const crownRy = Math.max(12, (trunkTopY - yCanopyTop) * 0.56);
+            const crownRx = crop.shortName === 'Walnut' ? 29 : 25;
+            treesSvg += `
+              <rect x="${tx - 3.5}" y="${trunkTopY.toFixed(1)}" width="7" height="${(groundY - trunkTopY).toFixed(1)}" rx="2" fill="#78350F" />
+              <ellipse cx="${tx}" cy="${crownCenterY.toFixed(1)}" rx="${crownRx}" ry="${crownRy.toFixed(1)}" fill="#16A34A" opacity="0.22" />
+              <ellipse cx="${tx}" cy="${crownCenterY.toFixed(1)}" rx="${crownRx - 2}" ry="${(crownRy - 2).toFixed(1)}" fill="#15803D" opacity="0.86" />
+            `;
+          }
+        });
+
+        // Prevent vertical overlap between upper & lower sensor callout pills
+        let highCardY = Math.max(topPadY + 6, Math.min(groundY - 76, yHighNode - 18));
+        let lowCardY = Math.max(topPadY + 48, Math.min(groundY - 36, yLowNode - 17));
+        if (lowCardY - highCardY < 42) {
+          highCardY = Math.max(topPadY + 4, lowCardY - 44);
+        }
+
+        const upperNodeColor = !hasUpper ? '#64748B' : (evalData.dualStatus === 'STOP' ? '#DC2626' : (evalData.dualStatus === 'CAUTION' ? '#D97706' : '#059669'));
+        const upperLine1 = hasUpper
+          ? `UPPER NODE (${state.highSensorFt.toFixed(1)} ft): ${atm.upper.tempF.toFixed(1)}°F · ${atm.upper.windMph.toFixed(1)} mph @ ${atm.upper.dirDeg}°`
+          : `UPPER NODE (${state.highSensorFt.toFixed(1)} ft): OFFLINE / NO TELEMETRY`;
+        const upperLine2 = hasUpper
+          ? `ΔT ${deltaT >= 0 ? '+' : ''}${deltaT.toFixed(1)}°F · Shear ${speedShear.toFixed(1)} mph · Twist ${dirTwist}°`
+          : 'Fail-safe HOLD active until upper node reconnects';
+
+        svg.innerHTML = `
+          <defs>
+            <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#EFF6FF" />
+              <stop offset="100%" stop-color="#F8FAFC" />
+            </linearGradient>
+          </defs>
+
+          <!-- Background Sky & Soil -->
+          <rect x="0" y="0" width="640" height="${groundY}" fill="url(#skyGrad)" />
+          ${blindZoneSvg}
+          <rect x="0" y="${groundY}" width="640" height="32" fill="#E2E8F0" />
+          <line x1="0" y1="${groundY}" x2="640" y2="${groundY}" stroke="#64748B" stroke-width="2" />
+
+          <!-- Left Elevation Axis -->
+          <line x1="50" y1="${topPadY}" x2="50" y2="${groundY}" stroke="#CBD5E1" stroke-width="1.2" />
+          ${axisTicksSvg}
+
+          <!-- Recommended Upper-Sensor Clearance Target Zone (6-10 ft above crown) -->
+          <rect x="52" y="${yBandTop.toFixed(1)}" width="586" height="${Math.max(6, yBandBot - yBandTop).toFixed(1)}" fill="#0D9488" opacity="0.10" />
+          <line x1="52" y1="${yBandTop.toFixed(1)}" x2="638" y2="${yBandTop.toFixed(1)}" stroke="#0D9488" stroke-width="1" stroke-dasharray="4 4" />
+          <line x1="52" y1="${yBandBot.toFixed(1)}" x2="638" y2="${yBandBot.toFixed(1)}" stroke="#0D9488" stroke-width="1" stroke-dasharray="4 4" />
+          <text x="632" y="${(yBandTop + 11).toFixed(1)}" text-anchor="end" font-size="8.5" font-weight="800" fill="#0F766E">TARGET UPPER ZONE (${rec.bandMin.toFixed(0)}–${rec.bandMax.toFixed(0)} ft)</text>
+
+          <!-- Canopy Crown Envelope (Scoped to Orchard Zone on Right) -->
+          <rect x="410" y="${yUncTop.toFixed(1)}" width="224" height="${Math.max(6, yUncBot - yUncTop).toFixed(1)}" rx="4" fill="#F59E0B" opacity="0.14" />
+          <line x1="410" y1="${yCanopyTop.toFixed(1)}" x2="634" y2="${yCanopyTop.toFixed(1)}" stroke="#15803D" stroke-width="1.4" stroke-dasharray="5 3" />
+          <text x="632" y="${Math.max(topPadY + 10, yUncTop - 4).toFixed(1)}" text-anchor="end" font-size="8.5" font-weight="800" fill="#166534">${crop.shortName.toUpperCase()} CROWN ${state.canopyHeightFt.toFixed(1)} ft (±${uncFt.toFixed(1)} ft)</text>
+
+          <!-- Orchard Trees -->
+          ${treesSvg}
+
+          <!-- Dual-Sensor Telemetry Mast (Open Sky Column x = 112) -->
+          <line x1="112" y1="${Math.min(yHighNode - 8, topPadY + 10).toFixed(1)}" x2="112" y2="${groundY}" stroke="#1E293B" stroke-width="3.5" stroke-linecap="round" />
+          <rect x="103" y="${groundY - 4}" width="18" height="4" rx="1" fill="#0F172A" />
+
+          <!-- Clearance Bracket between Crown Top & Upper Node -->
+          <line x1="88" y1="${yHighNode.toFixed(1)}" x2="88" y2="${yUncTop.toFixed(1)}" stroke="${effectiveClearanceFt >= 6 ? '#0F766E' : '#DC2626'}" stroke-width="1.5" />
+          <line x1="84" y1="${yHighNode.toFixed(1)}" x2="92" y2="${yHighNode.toFixed(1)}" stroke="${effectiveClearanceFt >= 6 ? '#0F766E' : '#DC2626'}" stroke-width="1.5" />
+          <line x1="84" y1="${yUncTop.toFixed(1)}" x2="92" y2="${yUncTop.toFixed(1)}" stroke="${effectiveClearanceFt >= 6 ? '#0F766E' : '#DC2626'}" stroke-width="1.5" />
+          <text x="82" y="${((yHighNode + yUncTop) / 2 + 3).toFixed(1)}" text-anchor="end" font-size="8.5" font-weight="800" fill="${effectiveClearanceFt >= 6 ? '#0F766E' : '#DC2626'}" font-family="JetBrains Mono, monospace">+${effectiveClearanceFt.toFixed(1)}ft</text>
+
+          <!-- Upper Sensor Node Marker & Leader -->
+          <circle cx="112" cy="${yHighNode.toFixed(1)}" r="8" fill="${upperNodeColor}" opacity="0.22" />
+          <circle cx="112" cy="${yHighNode.toFixed(1)}" r="4.8" fill="${upperNodeColor}" stroke="#FFFFFF" stroke-width="1.5" />
+          <line x1="118" y1="${yHighNode.toFixed(1)}" x2="136" y2="${(highCardY + 17).toFixed(1)}" stroke="${upperNodeColor}" stroke-width="1.4" />
+
+          <!-- Upper Sensor Callout Card -->
+          <rect x="136" y="${highCardY.toFixed(1)}" width="264" height="35" rx="7" fill="#FFFFFF" stroke="${upperNodeColor}" stroke-width="1.5" />
+          <text x="145" y="${(highCardY + 14).toFixed(1)}" font-size="9.5" font-weight="800" fill="#0F172A" font-family="Inter, sans-serif">${upperLine1}</text>
+          <text x="145" y="${(highCardY + 27).toFixed(1)}" font-size="9" font-weight="700" fill="${upperNodeColor}" font-family="JetBrains Mono, monospace">${upperLine2}</text>
+
+          <!-- Lower Sensor Node Marker & Leader -->
+          <circle cx="112" cy="${yLowNode.toFixed(1)}" r="4.8" fill="#0284C7" stroke="#FFFFFF" stroke-width="1.5" />
+          <line x1="118" y1="${yLowNode.toFixed(1)}" x2="136" y2="${(lowCardY + 16).toFixed(1)}" stroke="#0284C7" stroke-width="1.4" />
+
+          <!-- Lower Sensor Callout Card -->
+          <rect x="136" y="${lowCardY.toFixed(1)}" width="264" height="33" rx="7" fill="#FFFFFF" stroke="#0284C7" stroke-width="1.3" />
+          <text x="145" y="${(lowCardY + 13.5).toFixed(1)}" font-size="9.5" font-weight="800" fill="#0F172A" font-family="Inter, sans-serif">LOWER NODE (${state.lowSensorFt.toFixed(1)} ft): ${atm.lower.tempF.toFixed(1)}°F · ${atm.lower.windMph.toFixed(1)} mph @ ${atm.lower.dirDeg}°</text>
+          <text x="145" y="${(lowCardY + 26).toFixed(1)}" font-size="8.8" font-weight="600" fill="#475569" font-family="JetBrains Mono, monospace">Sub-Canopy Floor · RH ${atm.lower.rhPct}%</text>
+
+          <!-- Footer Label -->
+          <text x="12" y="244" font-size="9.5" font-weight="700" fill="#334155">ORCHARD FLOOR (0.0 ft) — ${crop.name}</text>
+        `;
+      }
+
+      function renderForecastStrip(series) {
+        const strip = document.getElementById('forecastStrip');
+        if (!strip) return;
+
+        strip.innerHTML = series.map((item) => {
+          const h = item.atm.offsetHr;
+          const activeClass = h === state.forecastOffsetHr ? 'active' : '';
+          const dotClass = item.dualStatus.toLowerCase();
+          return `
+            <button type="button" class="fc-cell ${activeClass}" data-offset="${h}" title="+${h}h (${formatHour(item.atm.localHour)} PT): ${item.dualStatus}">
+              <span class="fc-hr tabular">+${h}h</span>
+              <span class="fc-dot ${dotClass}"></span>
+            </button>
+          `;
+        }).join('');
+      }
+
+      function renderForecastSparkline(series) {
+        const svg = document.getElementById('forecastSparklineSvg');
+        if (!svg) return;
+
+        const padL = 34;
+        const padR = 14;
+        const padT = 16;
+        const padB = 22;
+        const w = 420 - padL - padR;
+        const h = 116 - padT - padB;
+
+        const temps = [];
+        series.forEach((item) => {
+          temps.push(item.atm.lower.tempF);
+          if (item.hasUpper) temps.push(item.atm.upper.tempF);
+        });
+
+        const minT = Math.floor((Math.min(...temps) - 3) / 5) * 5;
+        const maxT = Math.ceil((Math.max(...temps) + 3) / 5) * 5;
+        const spanT = Math.max(10, maxT - minT);
+
+        const xFor = (idx) => padL + (idx / 12) * w;
+        const yFor = (t) => padT + h - ((t - minT) / spanT) * h;
+
+        const lowPts = series.map((item, idx) => `${xFor(idx).toFixed(1)},${yFor(item.atm.lower.tempF).toFixed(1)}`).join(' ');
+        const hasAnyUpper = series.some((item) => item.hasUpper);
+        const highPts = hasAnyUpper
+          ? series.filter((item) => item.hasUpper).map((item) => `${xFor(item.atm.offsetHr).toFixed(1)},${yFor(item.atm.upper.tempF).toFixed(1)}`).join(' ')
+          : '';
+
+        // Shaded delta-T band between lower and upper curves
+        let deltaPoly = '';
+        if (hasAnyUpper) {
+          const forward = series.map((item, idx) => `${xFor(idx).toFixed(1)},${yFor(item.atm.upper.tempF).toFixed(1)}`);
+          const backward = [...series].reverse().map((item) => `${xFor(item.atm.offsetHr).toFixed(1)},${yFor(item.atm.lower.tempF).toFixed(1)}`);
+          deltaPoly = `<polygon points="${forward.concat(backward).join(' ')}" fill="#0284C7" opacity="0.12" />`;
+        }
+
+        const activeItem = series[state.forecastOffsetHr] || series[0];
+        const activeX = xFor(state.forecastOffsetHr);
+        const activeLowY = yFor(activeItem.atm.lower.tempF);
+        const activeHighY = activeItem.hasUpper ? yFor(activeItem.atm.upper.tempF) : activeLowY;
+
+        let xLabels = '';
+        for (let hr = 0; hr <= 12; hr += 2) {
+          xLabels += `<text x="${xFor(hr).toFixed(1)}" y="110" text-anchor="middle" font-size="8.5" font-weight="700" fill="#64748B" font-family="JetBrains Mono, monospace">+${hr}h</text>`;
+        }
+
+        svg.innerHTML = `
+          <!-- Grid Lines -->
+          <line x1="${padL}" y1="${padT}" x2="${420 - padR}" y2="${padT}" stroke="#E2E8F0" stroke-width="1" />
+          <line x1="${padL}" y1="${(padT + h / 2).toFixed(1)}" x2="${420 - padR}" y2="${(padT + h / 2).toFixed(1)}" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="3 3" />
+          <line x1="${padL}" y1="${padT + h}" x2="${420 - padR}" y2="${padT + h}" stroke="#CBD5E1" stroke-width="1" />
+
+          <!-- Y Axis Temperature Labels -->
+          <text x="${padL - 5}" y="${padT + 3}" text-anchor="end" font-size="8.5" font-weight="700" fill="#64748B" font-family="JetBrains Mono, monospace">${maxT}°</text>
+          <text x="${padL - 5}" y="${(padT + h / 2 + 3).toFixed(1)}" text-anchor="end" font-size="8.5" font-weight="700" fill="#64748B" font-family="JetBrains Mono, monospace">${Math.round((minT + maxT) / 2)}°</text>
+          <text x="${padL - 5}" y="${padT + h + 3}" text-anchor="end" font-size="8.5" font-weight="700" fill="#64748B" font-family="JetBrains Mono, monospace">${minT}°</text>
+
+          ${deltaPoly}
+
+          <!-- Lower Sensor Curve -->
+          <polyline fill="none" stroke="#0284C7" stroke-width="2.2" ${state.showSingleSensor ? 'stroke-dasharray="4 3"' : ''} points="${lowPts}" />
+
+          <!-- Upper Sensor Curve -->
+          ${hasAnyUpper ? `<polyline fill="none" stroke="#0F172A" stroke-width="2.4" points="${highPts}" />` : ''}
+
+          <!-- Selected Hour Marker -->
+          <line x1="${activeX.toFixed(1)}" y1="${padT}" x2="${activeX.toFixed(1)}" y2="${padT + h}" stroke="#0F172A" stroke-width="1.2" stroke-dasharray="2 2" />
+          <circle cx="${activeX.toFixed(1)}" cy="${activeLowY.toFixed(1)}" r="3.8" fill="#0284C7" stroke="#FFFFFF" stroke-width="1.2" />
+          ${activeItem.hasUpper ? `<circle cx="${activeX.toFixed(1)}" cy="${activeHighY.toFixed(1)}" r="4" fill="#0F172A" stroke="#FFFFFF" stroke-width="1.2" />` : ''}
+
+          <!-- Legend -->
+          <circle cx="44" cy="9" r="3" fill="#0284C7" />
+          <text x="51" y="12" font-size="8.5" font-weight="700" fill="#334155">Lower (${state.lowSensorFt.toFixed(1)} ft)</text>
+          <circle cx="145" cy="9" r="3" fill="#0F172A" />
+          <text x="152" y="12" font-size="8.5" font-weight="700" fill="#334155">Upper (${state.highSensorFt.toFixed(1)} ft)</text>
+
+          ${xLabels}
+        `;
+      }
+
+      /* =========================================================================
+       * 6. AUDIT TABLE & MASTER RENDER LOOP
+       * ========================================================================= */
+      function renderAuditTable(evalData) {
+        const theadRow = document.getElementById('auditTableHeadRow');
+        const tbody = document.getElementById('auditTableBody');
+        if (!theadRow || !tbody) return;
+
+        const alertRows = evalData.rows.filter((r) => r.dualTag !== 'pass' || (state.showSingleSensor && r.singleTag === 'blind'));
+        const labelRows = evalData.rows.filter((r) => r.category === 'label');
+
+        document.getElementById('countAll').textContent = String(evalData.rows.length);
+        document.getElementById('countAlerts').textContent = String(alertRows.length);
+        document.getElementById('countLabel').textContent = String(labelRows.length);
+        document.getElementById('auditAlertTabLabel').textContent = state.showSingleSensor ? 'Alerts & Blind Spots' : 'Alerts & Limits';
+
+        if (state.showSingleSensor) {
+          theadRow.innerHTML = `
+            <th>Atmospheric / Label Gate</th>
+            <th>1-Sensor Input</th>
+            <th>1-Sensor Result</th>
+            <th>Dual-Sensor Input</th>
+            <th>CanopyClear Result</th>
+          `;
+        } else {
+          theadRow.innerHTML = `
+            <th>Atmospheric / Label Gate</th>
+            <th>Dual-Sensor Input</th>
+            <th>CanopyClear Result</th>
+          `;
+        }
+
+        let visibleRows = evalData.rows;
+        if (state.auditFilter === 'alerts') {
+          visibleRows = alertRows;
+        } else if (state.auditFilter === 'label') {
+          visibleRows = labelRows;
+        }
+
+        if (visibleRows.length === 0) {
+          const colSpan = state.showSingleSensor ? 5 : 3;
+          tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align:center; color: var(--text-muted); padding: 14px;">All active gates pass for the selected filter.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = visibleRows.map((r) => {
+          if (state.showSingleSensor) {
+            return `
+              <tr>
+                <td style="font-weight: 700; color: var(--obsidian-900);">${r.gate}</td>
+                <td class="tabular" style="color: var(--text-secondary);">${r.singleIn}</td>
+                <td><span class="gate-tag tag-${r.singleTag}">${r.singleRes}</span></td>
+                <td class="tabular" style="font-weight: 600;">${r.dualIn}</td>
+                <td><span class="gate-tag tag-${r.dualTag}">${r.dualRes}</span></td>
+              </tr>
+            `;
+          }
+          return `
+            <tr>
+              <td style="font-weight: 700; color: var(--obsidian-900);">${r.gate}</td>
+              <td class="tabular" style="font-weight: 600;">${r.dualIn}</td>
+              <td><span class="gate-tag tag-${r.dualTag}">${r.dualRes}</span></td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      function renderAll() {
+        const outlook = compute12HourOutlook();
+        const evalData = outlook.series[state.forecastOffsetHr] || outlook.series[0];
+        const { atm, sc, prod, uncFt, rec, effectiveClearanceFt } = evalData;
+
+        // 1. Header Status & 1-Sensor Toggle
+        const statusDot = document.getElementById('sourceStatusDot');
+        statusDot.className = 'pulse-dot ' + (evalData.dualStatus === 'GO' ? '' : (evalData.dualStatus === 'CAUTION' ? 'amber' : 'crimson'));
+        document.getElementById('headerStatusText').textContent =
+          `${sc.label} · ${formatHour(atm.localHour)} PT · +${state.forecastOffsetHr}h`;
+
+        const topToggleBtn = document.getElementById('toggleSingleSensorBtn');
+        const inlineToggleBtn = document.getElementById('inlineSingleToggleBtn');
+        if (state.showSingleSensor) {
+          topToggleBtn.textContent = '1-Sensor Compare: ON';
+          topToggleBtn.classList.remove('toggle-off');
+          topToggleBtn.classList.add('toggle-on');
+          topToggleBtn.setAttribute('aria-pressed', 'true');
+          inlineToggleBtn.textContent = 'Hide 1-Sensor';
+        } else {
+          topToggleBtn.textContent = '1-Sensor Compare: OFF';
+          topToggleBtn.classList.remove('toggle-on');
+          topToggleBtn.classList.add('toggle-off');
+          topToggleBtn.setAttribute('aria-pressed', 'false');
+          inlineToggleBtn.textContent = '+ Compare 1-Sensor';
+        }
+
+        // 2. Sidebar Controls & Badges
+        document.querySelectorAll('.scenario-btn').forEach((btn) => {
+          btn.classList.toggle('active', btn.dataset.scenario === state.scenario);
+        });
+
+        document.getElementById('forecastOffsetLabel').textContent =
+          state.forecastOffsetHr === 0 ? '+0h (Now)' : `+${state.forecastOffsetHr}h (${formatHour(atm.localHour)} PT)`;
+        document.getElementById('forecastRange').value = String(state.forecastOffsetHr);
+
+        const clearanceBadge = document.getElementById('clearanceBadge');
+        if (effectiveClearanceFt >= 6.0 && effectiveClearanceFt <= 12.0) {
+          clearanceBadge.textContent = `Clearance +${effectiveClearanceFt.toFixed(1)} ft`;
+          clearanceBadge.className = 'micro-badge cobalt';
+        } else if (effectiveClearanceFt >= 4.0) {
+          clearanceBadge.textContent = `Margin +${effectiveClearanceFt.toFixed(1)} ft`;
+          clearanceBadge.className = 'micro-badge amber';
+        } else {
+          clearanceBadge.textContent = `Too Low (+${effectiveClearanceFt.toFixed(1)} ft)`;
+          clearanceBadge.className = 'micro-badge crimson';
+        }
+
+        document.getElementById('canopySourceHint').textContent = state.canopyManuallySet
+          ? `Grower-measured (±${uncFt.toFixed(1)} ft uncertainty)`
+          : `Species age curve (±${uncFt.toFixed(1)} ft uncertainty)`;
+
+        document.getElementById('bufferBadge').textContent = `${prod.aquaticBufferFt} ft Buffer`;
+        document.getElementById('productRuleNote').textContent = prod.ruleSummary;
+
+        // 3. Zone 1: Grower Spray Decision Hero Banner
+        const hero = document.getElementById('verdictBanner');
+        hero.className = `verdict-hero ${evalData.verdictClass}`;
+        document.getElementById('verdictTitle').textContent = evalData.verdictTitle;
+        document.getElementById('verdictSubtitle').textContent = evalData.verdictSubtitle;
+        document.getElementById('outlookSummaryBox').textContent = outlook.outlookText;
+
+        document.getElementById('verdictChipsRow').innerHTML = evalData.chips
+          .map((c) => `<span class="v-chip tabular">${c}</span>`)
+          .join('');
+
+        // Optional 1-Sensor vs 2-Sensor Comparison Split
+        const splitGrid = document.getElementById('comparisonSplitGrid');
+        const singleCol = document.getElementById('singleCompCol');
+        if (state.showSingleSensor) {
+          splitGrid.style.gridTemplateColumns = '1fr 1fr';
+          singleCol.style.display = 'flex';
+        } else {
+          splitGrid.style.gridTemplateColumns = '1fr';
+          singleCol.style.display = 'none';
+        }
+
+        document.getElementById('singleMastSub').textContent = `${state.lowSensorFt.toFixed(1)} ft sub-canopy floor only`;
+        const singlePill = document.getElementById('singleResultPill');
+        if (evalData.singleStatus === 'GO') {
+          singlePill.textContent = 'LOWER NODE PASS';
+          singlePill.className = 'status-pill pill-single-pass';
+        } else if (evalData.singleStatus === 'CAUTION') {
+          singlePill.textContent = 'LOWER CAUTION';
+          singlePill.className = 'status-pill pill-caution';
+        } else {
+          singlePill.textContent = 'LOWER STOP';
+          singlePill.className = 'status-pill pill-stop';
+        }
+        document.getElementById('singleSummaryText').textContent =
+          `Lower node reads ${atm.lower.tempF.toFixed(1)}°F and ${atm.lower.windMph.toFixed(1)} mph (${atm.lower.rhPct}% RH), but boundary-layer air above ${rec.estTop.toFixed(1)} ft crown is UNMONITORED.`;
+
+        document.getElementById('dualMastSub').textContent =
+          `${state.lowSensorFt.toFixed(1)} ft floor + ${state.highSensorFt.toFixed(1)} ft above-canopy vertical profile`;
+
+        const compBadge = document.getElementById('comparisonBadge');
+        compBadge.style.display = (state.showSingleSensor && evalData.isBlindSpot) ? 'inline-block' : 'none';
+
+        const dualPill = document.getElementById('dualResultPill');
+        dualPill.textContent = `STATUS: ${evalData.dualStatus}`;
+        dualPill.className = 'status-pill ' + (
+          evalData.dualStatus === 'GO' ? 'pill-go' :
+          evalData.dualStatus === 'CAUTION' ? 'pill-caution' :
+          evalData.dualStatus === 'STOP' ? 'pill-stop' : 'pill-unknown'
+        );
+
+        if (!evalData.hasUpper) {
+          document.getElementById('dualSummaryText').textContent =
+            'Upper node offline — CanopyClear refuses to extrapolate safety across the unmonitored canopy column.';
+        } else if (evalData.stopReasons.length > 0) {
+          document.getElementById('dualSummaryText').textContent = `Blocked by: ${evalData.stopReasons.join('; ')}.`;
+        } else if (evalData.cautionReasons.length > 0) {
+          document.getElementById('dualSummaryText').textContent = `Advisory flags: ${evalData.cautionReasons.join('; ')}.`;
+        } else {
+          document.getElementById('dualSummaryText').textContent =
+            `Vertical column verified: ${evalData.deltaT >= 0 ? '+' : ''}${evalData.deltaT.toFixed(1)}°F ΔT, ${evalData.speedShear.toFixed(1)} mph shear, and ${evalData.dirTwist}° twist are all within safe limits.`;
+        }
+
+        // 4. Zone 2: Elevation & 12-Hour Forecast Visuals
+        document.getElementById('seasonalPhysicsNote').textContent = sc.note;
+        renderElevationSvg(evalData);
+        renderForecastStrip(outlook.series);
+        renderForecastSparkline(outlook.series);
+
+        // 5. Zone 3: Audit Table
+        renderAuditTable(evalData);
+      }
+
+      /* =========================================================================
+       * 7. CSV TELEMETRY EXPORT & EVENT HANDLERS
+       * ========================================================================= */
+      function exportCsvLog() {
+        const outlook = compute12HourOutlook();
+        const evalData = outlook.series[state.forecastOffsetHr] || outlook.series[0];
+        const { atm, sc, crop, prod, recp, uncFt, effectiveClearanceFt, hasUpper, deltaT, speedShear, dirTwist } = evalData;
+
+        const now = new Date();
+        const utcIso = now.toISOString();
+        const ptTime = now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles', hour12: false });
+
+        const headers = [
+          'timestamp_utc',
+          'timestamp_pt',
+          'scenario',
+          'forecast_offset_hr',
+          'crop',
+          'canopy_top_ft',
+          'uncertainty_ft',
+          'lower_node_ft',
+          'upper_node_ft',
+          'crown_clearance_ft',
+          'lower_temp_f',
+          'upper_temp_f',
+          'delta_t_f',
+          'lower_wind_mph',
+          'upper_wind_mph',
+          'wind_shear_mph',
+          'dir_twist_deg',
+          'rh_pct',
+          'pesticide_product',
+          'epa_reg_no',
+          'buffer_ft',
+          'receptor',
+          'single_sensor_status',
+          'canopyclear_status',
+          'active_reasons'
+        ];
+
+        const reasons = [...evalData.stopReasons, ...evalData.unknownReasons, ...evalData.cautionReasons].join(' | ') || 'None';
+        const values = [
+          utcIso,
+          ptTime,
+          sc.label,
+          `+${state.forecastOffsetHr}h`,
+          crop.shortName,
+          state.canopyHeightFt.toFixed(1),
+          uncFt.toFixed(1),
+          state.lowSensorFt.toFixed(1),
+          state.highSensorFt.toFixed(1),
+          effectiveClearanceFt.toFixed(1),
+          atm.lower.tempF.toFixed(1),
+          hasUpper ? atm.upper.tempF.toFixed(1) : 'OFFLINE',
+          hasUpper ? deltaT.toFixed(1) : 'OFFLINE',
+          atm.lower.windMph.toFixed(1),
+          hasUpper ? atm.upper.windMph.toFixed(1) : 'OFFLINE',
+          hasUpper ? speedShear.toFixed(1) : 'OFFLINE',
+          hasUpper ? dirTwist : 'OFFLINE',
+          atm.lower.rhPct,
+          prod.name,
+          prod.regNo,
+          prod.aquaticBufferFt,
+          recp.name,
+          evalData.singleStatus,
+          evalData.dualStatus,
+          reasons
+        ].map((v) => `"${String(v).replace(/"/g, '""')}"`);
+
+        const csvContent = `${headers.join(',')}\n${values.join(',')}\n`;
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'canopyclear_telemetry_log.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        const toast = document.getElementById('toastChip');
+        toast.classList.add('visible');
+        setTimeout(() => toast.classList.remove('visible'), 3000);
+      }
+
+      function stopForecastPlayback() {
+        if (state.playTimer) {
+          clearInterval(state.playTimer);
+          state.playTimer = null;
+        }
+        state.isPlaying = false;
+        const btn = document.getElementById('playForecastBtn');
+        if (btn) btn.textContent = 'Play +12h';
+      }
+
+      function toggleForecastPlayback() {
+        if (state.isPlaying) {
+          stopForecastPlayback();
+          return;
+        }
+        state.isPlaying = true;
+        document.getElementById('playForecastBtn').textContent = 'Pause';
+        state.playTimer = setInterval(() => {
+          state.forecastOffsetHr = (state.forecastOffsetHr + 1) % 13;
+          renderAll();
+        }, 950);
+      }
+
+      function toggleSingleSensor() {
+        state.showSingleSensor = !state.showSingleSensor;
+        renderAll();
+      }
+
+      function bindEvents() {
+        document.getElementById('scenarioGrid').addEventListener('click', (e) => {
+          const btn = e.target.closest('.scenario-btn');
+          if (!btn) return;
+          stopForecastPlayback();
+          state.scenario = btn.dataset.scenario;
+          state.forecastOffsetHr = 0;
+          renderAll();
+        });
+
+        document.getElementById('forecastRange').addEventListener('input', (e) => {
+          stopForecastPlayback();
+          state.forecastOffsetHr = parseInt(e.target.value, 10) || 0;
+          renderAll();
+        });
+
+        document.getElementById('playForecastBtn').addEventListener('click', toggleForecastPlayback);
+
+        document.getElementById('forecastStrip').addEventListener('click', (e) => {
+          const cell = e.target.closest('.fc-cell');
+          if (!cell) return;
+          stopForecastPlayback();
+          state.forecastOffsetHr = parseInt(cell.dataset.offset, 10) || 0;
+          renderAll();
+        });
+
+        document.getElementById('cropSelect').addEventListener('change', (e) => {
+          state.crop = e.target.value;
+          if (!state.canopyManuallySet) {
+            state.canopyHeightFt = computeCurveCanopyHeight(state.crop, state.treeAgeYrs);
+            document.getElementById('canopyHeightInput').value = state.canopyHeightFt.toFixed(1);
+          }
+          renderAll();
+        });
+
+        document.getElementById('treeAgeInput').addEventListener('input', (e) => {
+          const age = Math.max(1, Math.min(60, parseInt(e.target.value, 10) || 1));
+          state.treeAgeYrs = age;
+          if (!state.canopyManuallySet) {
+            state.canopyHeightFt = computeCurveCanopyHeight(state.crop, state.treeAgeYrs);
+            document.getElementById('canopyHeightInput').value = state.canopyHeightFt.toFixed(1);
+          }
+          renderAll();
+        });
+
+        document.getElementById('canopyHeightInput').addEventListener('input', (e) => {
+          const h = parseFloat(e.target.value);
+          if (!Number.isNaN(h) && h >= 3 && h <= 45) {
+            state.canopyHeightFt = h;
+            state.canopyManuallySet = true;
+            renderAll();
+          }
+        });
+
+        document.getElementById('resetCanopyCurveBtn').addEventListener('click', () => {
+          state.canopyManuallySet = false;
+          state.canopyHeightFt = computeCurveCanopyHeight(state.crop, state.treeAgeYrs);
+          document.getElementById('canopyHeightInput').value = state.canopyHeightFt.toFixed(1);
+          renderAll();
+        });
+
+        document.getElementById('lowSensorInput').addEventListener('input', (e) => {
+          const val = parseFloat(e.target.value);
+          if (!Number.isNaN(val) && val >= 2 && val <= 15) {
+            state.lowSensorFt = val;
+            renderAll();
+          }
+        });
+
+        document.getElementById('highSensorInput').addEventListener('input', (e) => {
+          const val = parseFloat(e.target.value);
+          if (!Number.isNaN(val) && val >= 6 && val <= 60) {
+            state.highSensorFt = val;
+            renderAll();
+          }
+        });
+
+        document.getElementById('autoAlignMastBtn').addEventListener('click', () => {
+          const rec = computeRecommendedMastBand();
+          state.highSensorFt = rec.optimalFt;
+          document.getElementById('highSensorInput').value = state.highSensorFt.toFixed(1);
+          renderAll();
+        });
+
+        document.getElementById('productSelect').addEventListener('change', (e) => {
+          state.product = e.target.value;
+          renderAll();
+        });
+
+        document.getElementById('receptorSelect').addEventListener('change', (e) => {
+          state.receptor = e.target.value;
+          renderAll();
+        });
+
+        document.querySelectorAll('.tab-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+            btn.classList.add('active');
+            state.auditFilter = btn.dataset.filter;
+            renderAll();
+          });
+        });
+
+        document.getElementById('toggleSingleSensorBtn').addEventListener('click', toggleSingleSensor);
+        document.getElementById('inlineSingleToggleBtn').addEventListener('click', toggleSingleSensor);
+        document.getElementById('exportCsvBtn').addEventListener('click', exportCsvLog);
+      }
+
+      // Initialize application on window load
+      window.addEventListener('DOMContentLoaded', () => {
+        bindEvents();
+        renderAll();
+      });
+    })();
+  </script>
+</body>
+</html>
