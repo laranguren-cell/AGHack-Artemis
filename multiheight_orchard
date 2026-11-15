@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OrchardGuard 30/5 — Multi-Height Orchard Drift Decision Tool</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono for telemetry readouts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    /* Custom range slider styling for crisp outdoor touch usability */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 8px;
+      border-radius: 9999px;
+      background: #e2e8f0;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #0f172a;
+      border: 2px solid #ffffff;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
+      cursor: pointer;
+      transition: transform 0.12s ease, background-color 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.1);
+      background: #1e293b;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #0f172a;
+      border: 2px solid #ffffff;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 font-sans antialiased selection:bg-emerald-200 selection:text-emerald-950">
+  <!-- Top Header Bar -->
+  <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <!-- Mast Icon SVG -->
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shrink-0">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 2v20M7 6h10M8 14h8M5 22h14" />
+            <circle cx="12" cy="6" r="1.5" fill="currentColor" />
+            <circle cx="12" cy="14" r="1.5" fill="currentColor" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight">OrchardGuard 30/5</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
+              Multi-Height Spray Drift Decision System
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">California Central Valley Drift Prevention &bull; UC IPM &amp; DPR (3 CCR § 6614) Aligned</p>
+        </div>
+      </div>
+
+      <!-- Quick Scenario Presets -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <span class="text-xs font-medium text-slate-400 mr-1 hidden md:inline">Fresno Baseline Presets:</span>
+        <button type="button" onclick="loadPreset('inversion')" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/15 text-rose-200 border border-rose-500/30 hover:bg-rose-500/25 transition">
+          Dawn Inversion (STOP)
+        </button>
+        <button type="button" onclick="loadPreset('safe')" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-200 border border-emerald-500/30 hover:bg-emerald-500/25 transition">
+          Morning Window (GO)
+        </button>
+        <button type="button" onclick="loadPreset('shear')" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-200 border border-amber-500/30 hover:bg-amber-500/25 transition">
+          Canopy Shear (CAUTION)
+        </button>
+        <button type="button" onclick="loadPreset('highwind')" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/15 text-rose-200 border border-rose-500/30 hover:bg-rose-500/25 transition">
+          Afternoon Wind (STOP)
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <!-- CIMIS Hourly CSV Upload & Live Timeline Replay Bar -->
+    <section class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm space-y-4">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-md text-xs font-bold uppercase tracking-wider bg-indigo-50 text-indigo-800 border border-indigo-200">
+              CIMIS Data Feed
+            </span>
+            <h2 class="text-base font-bold text-slate-900">Upload Hourly CIMIS Report &amp; Replay Timeline</h2>
+          </div>
+          <p class="text-xs text-slate-500">
+            Load an exported CIMIS hourly CSV (<code class="font-mono text-slate-700">hourly_report.csv</code>) for real 5 ft ground baselines, or test with the built-in Fresno #80 24-hour dataset.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2.5">
+          <!-- File Upload Button -->
+          <label for="cimisCsvInput" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold shadow-sm flex items-center gap-2 transition cursor-pointer">
+            <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Upload CIMIS Hourly CSV
+          </label>
+          <input id="cimisCsvInput" type="file" accept=".csv,text/csv" class="hidden" />
+
+          <!-- Built-in 24-Hr Sample Button -->
+          <button type="button" onclick="loadBuiltInFresnoSample()" class="px-3.5 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-200 text-xs sm:text-sm font-bold transition cursor-pointer">
+            Load Built-in Fresno #80 Sample (24-Hr)
+          </button>
+        </div>
+      </div>
+
+      <!-- Timeline Replay Controls (Shown when CSV or sample timeline is loaded) -->
+      <div id="timelinePlayerBar" class="hidden pt-4 border-t border-slate-200 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <!-- Playback Transport Buttons -->
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="stepTimeline(-1)" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 text-xs font-bold flex items-center gap-1 transition cursor-pointer">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+              Prev Hour
+            </button>
+
+            <button type="button" id="playPauseBtn" onclick="toggleTimelinePlayback()" class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer">
+              <svg id="playIcon" class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+              <span id="playPauseText">Play Timeline</span>
+            </button>
+
+            <button type="button" onclick="stepTimeline(1)" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 text-xs font-bold flex items-center gap-1 transition cursor-pointer">
+              Next Hour
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
+            <button type="button" onclick="batchEvaluateTimeline()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm flex items-center gap-1.5 transition cursor-pointer">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Batch Evaluate All CSV Hours
+            </button>
+          </div>
+
+          <!-- Active Timestamp & Station Badge -->
+          <div class="flex flex-wrap items-center gap-2">
+            <span id="timelineStationBadge" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 font-mono text-xs font-semibold">
+              Fresno State (#80)
+            </span>
+            <span id="timelineTimestampBadge" class="px-3 py-1 rounded-lg bg-slate-900 text-emerald-300 font-mono text-xs font-bold">
+              2026-11-12 06:00:00
+            </span>
+            <span id="timelineCounterBadge" class="text-xs font-mono font-semibold text-slate-500">
+              1 / 24
+            </span>
+          </div>
+        </div>
+
+        <!-- Scrubber Slider + Physics Simulation Toggles -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center bg-slate-50 rounded-xl p-3 border border-slate-200/80">
+          <div class="lg:col-span-6 flex items-center gap-3">
+            <span class="text-xs font-bold text-slate-600 whitespace-nowrap">Hour Scrubber:</span>
+            <input id="timelineScrubber" type="range" min="0" max="23" value="0" class="w-full" />
+          </div>
+
+          <div class="lg:col-span-6 flex flex-wrap items-center lg:justify-end gap-4 text-xs">
+            <label class="inline-flex items-center gap-2 font-semibold text-slate-800 cursor-pointer select-none">
+              <input id="autoDerive30Toggle" type="checkbox" checked class="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900" onchange="applyTimelineRow(currentTimelineIndex, false)" />
+              <span>Auto-derive 30 ft canopy telemetry from 5 ft CIMIS baseline</span>
+            </label>
+
+            <label class="inline-flex items-center gap-2 font-semibold text-slate-700 cursor-pointer select-none">
+              <input id="autoLogPlaybackToggle" type="checkbox" checked class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-600" />
+              <span>Auto-log during playback</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Live Status Decision Banner -->
+    <section id="statusBanner" class="rounded-2xl border-2 p-5 sm:p-6 shadow-sm transition-colors duration-200 bg-rose-50 border-rose-600">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div class="space-y-2 flex-1">
+          <div class="flex flex-wrap items-center gap-2.5">
+            <span id="statusBadge" class="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-lg sm:text-xl font-extrabold tracking-wide uppercase bg-rose-600 text-white shadow-sm">
+              <span id="statusDot" class="w-2.5 h-2.5 rounded-full bg-white animate-pulse"></span>
+              <span id="statusText">STOP</span>
+            </span>
+            <span id="statusSubtitle" class="text-sm sm:text-base font-bold text-rose-950">
+              DO NOT SPRAY — High Off-Target Drift Risk
+            </span>
+          </div>
+
+          <!-- Active Trigger Badges -->
+          <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-600 mr-1">Active Triggers:</span>
+            <div id="triggerList" class="flex flex-wrap gap-1.5"></div>
+          </div>
+
+          <!-- Plain-Language WHY Explanation -->
+          <div class="bg-white/85 backdrop-blur-sm rounded-xl p-3.5 border border-black/10">
+            <p class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Applicator Decision Explanation (WHY)</p>
+            <p id="reasonText" class="text-sm sm:text-base font-medium text-slate-900 leading-relaxed"></p>
+          </div>
+        </div>
+
+        <!-- Primary Action Controls -->
+        <div class="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0 lg:w-60">
+          <button type="button" onclick="recordCurrentReading()" class="w-full py-3.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-[0.99] text-white font-bold text-sm shadow-sm flex items-center justify-center gap-2 transition cursor-pointer">
+            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Evaluate &amp; Log Reading
+          </button>
+          <div class="text-center text-xs text-slate-600 font-medium">
+            Saves time-stamped record for PCA / DPR compliance
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main 2-Column Telemetry & Sensor Controls Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Left Column: Live Sensor Inputs (5 ft & 30 ft) -->
+      <div class="lg:col-span-7 space-y-5">
+        <!-- Orchard Block Identification Card -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <label for="orchardBlock" class="block text-sm font-bold text-slate-800">
+                Orchard Block / Station ID <span class="text-xs font-normal text-slate-500">(Optional)</span>
+              </label>
+              <p class="text-xs text-slate-500">Identifies the management zone in the DPR audit trail (default: Orchard Block 1).</p>
+            </div>
+            <input
+              id="orchardBlock"
+              type="text"
+              value="Orchard Block 1"
+              placeholder="Orchard Block 1"
+              class="w-full sm:w-64 px-3.5 py-2 rounded-xl border border-slate-300 bg-slate-50 text-sm font-semibold text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none transition"
+            />
+          </div>
+        </div>
+
+        <!-- 30 FT UPPER SENSOR CARD (Above Canopy) -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+            <div class="flex items-center gap-2.5">
+              <span class="px-2.5 py-1 rounded-lg bg-sky-100 text-sky-900 font-mono text-xs font-bold border border-sky-200">
+                30 FT SENSOR POD
+              </span>
+              <div>
+                <h2 class="text-base font-bold text-slate-900">Above-Canopy Treetop Level</h2>
+                <p class="text-xs text-slate-500">Detects warm inversion lids &amp; unobstructed treetop wind shear (10–30 ft orchards)</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <!-- 30 ft Temperature -->
+            <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200/80 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <label for="temp30Num" class="text-xs font-bold uppercase tracking-wider text-slate-600">Air Temp (°F)</label>
+                <span class="text-xs font-mono text-sky-700 font-semibold">30 ft</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <input id="temp30Num" type="number" step="0.1" min="20" max="125" value="49.5" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white font-mono text-lg font-bold text-slate-900 focus:border-sky-600 focus:outline-none" />
+                <span class="text-sm font-bold text-slate-500">°F</span>
+              </div>
+              <input id="temp30Slider" type="range" step="0.5" min="30" max="115" value="49.5" class="w-full" />
+            </div>
+
+            <!-- 30 ft Wind Speed -->
+            <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200/80 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <label for="ws30Num" class="text-xs font-bold uppercase tracking-wider text-slate-600">Wind Speed</label>
+                <span class="text-xs font-mono text-sky-700 font-semibold">3–10 mph</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <input id="ws30Num" type="number" step="0.1" min="0" max="40" value="2.3" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white font-mono text-lg font-bold text-slate-900 focus:border-sky-600 focus:outline-none" />
+                <span class="text-sm font-bold text-slate-500">mph</span>
+              </div>
+              <input id="ws30Slider" type="range" step="0.1" min="0" max="25" value="2.3" class="w-full" />
+            </div>
+
+            <!-- 30 ft Wind Direction -->
+            <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200/80 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <label for="wd30Num" class="text-xs font-bold uppercase tracking-wider text-slate-600">Wind Dir</label>
+                <span id="wd30Cardinal" class="text-xs font-mono text-sky-700 font-bold">SSE</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <input id="wd30Num" type="number" step="1" min="0" max="360" value="150" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white font-mono text-lg font-bold text-slate-900 focus:border-sky-600 focus:outline-none" />
+                <span class="text-sm font-bold text-slate-500">°</span>
+              </div>
+              <input id="wd30Slider" type="range" step="1" min="0" max="360" value="150" class="w-full" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 5 FT LOWER SENSOR CARD (Inside Lower Canopy / Eye Level) -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+            <div class="flex items-center gap-2.5">
+              <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-900 font-mono text-xs font-bold border border-emerald-200">
+                5 FT SENSOR POD
+              </span>
+              <div>
+                <h2 class="text-base font-bold text-slate-900">Ground / Lower Canopy Baseline</h2>
+                <p class="text-xs text-slate-500">Measures sheltered under-canopy temperature &amp; ground airflow</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <!-- 5 ft Temperature -->
+            <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200/80 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <label for="temp5Num" class="text-xs font-bold uppercase tracking-wider text-slate-600">Air Temp (°F)</label>
+                <span class="text-xs font-mono text-emerald-700 font-semibold">5 ft</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <input id="temp5Num" type="number" step="0.1" min="20" max="125" value="45.0" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white font-mono text-lg font-bold text-slate-900 focus:border-emerald-600 focus:outline-none" />
+                <span class="text-sm font-bold text-slate-500">°F</span>
+              </div>
+              <input id="temp5Slider" type="range" step="0.5" min="30" max="115" value="45.0" class="w-full" />
+            </div>
+
+            <!-- 5 ft Wind Speed -->
+            <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200/80 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <label for="ws5Num" class="text-xs font-bold uppercase tracking-wider text-slate-600">Wind Speed</label>
+                <span class="text-xs font-mono text-emerald-700 font-semibold">3–10 mph</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <input id="ws5Num" type="number" step="0.1" min="0" max="40" value="1.6" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white font-mono text-lg font-bold text-slate-900 focus:border-emerald-600 focus:outline-none" />
+                <span class="text-sm font-bold text-slate-500">mph</span>
+              </div>
+              <input id="ws5Slider" type="range" step="0.1" min="0" max="25" value="1.6" class="w-full" />
+            </div>
+
+            <!-- 5 ft Wind Direction -->
+            <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200/80 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <label for="wd5Num" class="text-xs font-bold uppercase tracking-wider text-slate-600">Wind Dir</label>
+                <span id="wd5Cardinal" class="text-xs font-mono text-emerald-700 font-bold">SE</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <input id="wd5Num" type="number" step="1" min="0" max="360" value="135" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white font-mono text-lg font-bold text-slate-900 focus:border-emerald-600 focus:outline-none" />
+                <span class="text-sm font-bold text-slate-500">°</span>
+              </div>
+              <input id="wd5Slider" type="range" step="1" min="0" max="360" value="135" class="w-full" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Visual Mast Telemetry & Gradient Diagnostics -->
+      <div class="lg:col-span-5 space-y-5">
+        <!-- Vertical Mast & Gradient Card -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-5">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">Vertical Mast Profile &amp; Shear</h2>
+              <p class="text-xs text-slate-500">Real-time comparison across the 25 ft canopy gap</p>
+            </div>
+            <span class="text-xs font-mono font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700">
+              ΔH = 25 ft
+            </span>
+          </div>
+
+          <!-- Visual Orchard Mast Diagram (SVG) -->
+          <div class="bg-gradient-to-b from-sky-50 via-slate-50 to-emerald-50/70 rounded-xl border border-slate-200 p-4">
+            <svg viewBox="0 0 360 215" class="w-full h-auto" aria-label="30 ft vs 5 ft Orchard Mast Comparison">
+              <!-- Ground line -->
+              <line x1="15" y1="190" x2="345" y2="190" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" />
+              <!-- Stylized Orchard Tree Canopy (10-30 ft context) -->
+              <path d="M55 190 L55 145" stroke="#78350f" stroke-width="7" stroke-linecap="round" />
+              <ellipse cx="55" cy="110" rx="38" ry="48" fill="#10b981" fill-opacity="0.22" stroke="#059669" stroke-width="1.5" stroke-dasharray="4 3" />
+              <text x="55" y="108" text-anchor="middle" font-size="10" font-weight="700" fill="#065f46">Orchard Canopy</text>
+              <text x="55" y="121" text-anchor="middle" font-size="9" fill="#047857">(10–30 ft)</text>
+
+              <!-- Sensor Mast Tower -->
+              <line x1="145" y1="24" x2="145" y2="190" stroke="#0f172a" stroke-width="4" stroke-linecap="round" />
+              <line x1="133" y1="190" x2="157" y2="190" stroke="#0f172a" stroke-width="4" stroke-linecap="round" />
+
+              <!-- 30 ft Sensor Crossarm & Node -->
+              <line x1="125" y1="36" x2="165" y2="36" stroke="#0284c7" stroke-width="3" stroke-linecap="round" />
+              <circle cx="145" cy="36" r="6" fill="#0284c7" stroke="#ffffff" stroke-width="2" />
+              <!-- 30 ft Callout Box -->
+              <rect x="175" y="16" width="170" height="44" rx="8" fill="#ffffff" stroke="#bae6fd" stroke-width="1.5" />
+              <text x="185" y="33" font-size="10" font-weight="700" fill="#0369a1">30 FT (ABOVE CANOPY)</text>
+              <text id="svg30Text" x="185" y="49" font-size="11" font-weight="700" font-family="monospace" fill="#0f172a">49.5°F | 2.3 mph @ 150°</text>
+
+              <!-- Vertical Delta Connector -->
+              <line x1="255" y1="64" x2="255" y2="122" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3 3" />
+              <rect x="200" y="79" width="110" height="28" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" />
+              <text id="svgDeltaText" x="255" y="97" text-anchor="middle" font-size="10" font-weight="700" font-family="monospace" fill="#be123c">ΔT: +4.5°F (INV)</text>
+
+              <!-- 5 ft Sensor Crossarm & Node -->
+              <line x1="125" y1="148" x2="165" y2="148" stroke="#059669" stroke-width="3" stroke-linecap="round" />
+              <circle cx="145" cy="148" r="6" fill="#059669" stroke="#ffffff" stroke-width="2" />
+              <!-- 5 ft Callout Box -->
+              <rect x="175" y="128" width="170" height="44" rx="8" fill="#ffffff" stroke="#a7f3d0" stroke-width="1.5" />
+              <text x="185" y="145" font-size="10" font-weight="700" fill="#047857">5 FT (LOWER CANOPY)</text>
+              <text id="svg5Text" x="185" y="161" font-size="11" font-weight="700" font-family="monospace" fill="#0f172a">45.0°F | 1.6 mph @ 135°</text>
+            </svg>
+          </div>
+
+          <!-- 3 Diagnostic Metric Cards -->
+          <div class="grid grid-cols-3 gap-2.5">
+            <!-- Thermal Gradient -->
+            <div id="tempCard" class="rounded-xl border p-3 bg-rose-50/70 border-rose-200">
+              <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Thermal ΔT</div>
+              <div id="tempDiffVal" class="font-mono text-base sm:text-lg font-extrabold text-rose-700 mt-0.5">+4.5°F</div>
+              <div id="tempDiffTag" class="text-[11px] font-semibold text-rose-700 mt-0.5">Inversion Lid</div>
+            </div>
+
+            <!-- Wind Speed Shear -->
+            <div id="speedCard" class="rounded-xl border p-3 bg-slate-50 border-slate-200">
+              <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Speed Shear</div>
+              <div id="speedDiffVal" class="font-mono text-base sm:text-lg font-extrabold text-slate-800 mt-0.5">0.7 mph</div>
+              <div id="speedDiffTag" class="text-[11px] font-semibold text-slate-600 mt-0.5">Limit ≤ 5.0 mph</div>
+            </div>
+
+            <!-- Wind Direction Shift -->
+            <div id="dirCard" class="rounded-xl border p-3 bg-slate-50 border-slate-200">
+              <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Dir Shift</div>
+              <div id="dirDiffVal" class="font-mono text-base sm:text-lg font-extrabold text-slate-800 mt-0.5">15.0°</div>
+              <div id="dirDiffTag" class="text-[11px] font-semibold text-slate-600 mt-0.5">Limit ≤ 45.0°</div>
+            </div>
+          </div>
+
+          <!-- Dual-Height Wind Compass & 3-10 mph Window Meter -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+            <!-- Dual Compass -->
+            <div class="bg-slate-50 rounded-xl border border-slate-200 p-3.5 flex items-center gap-3.5">
+              <svg viewBox="0 0 100 100" class="w-20 h-20 shrink-0">
+                <circle cx="50" cy="50" r="44" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" />
+                <text x="50" y="15" text-anchor="middle" font-size="9" font-weight="700" fill="#475569">N</text>
+                <text x="87" y="53" text-anchor="middle" font-size="9" font-weight="700" fill="#475569">E</text>
+                <text x="50" y="92" text-anchor="middle" font-size="9" font-weight="700" fill="#475569">S</text>
+                <text x="13" y="53" text-anchor="middle" font-size="9" font-weight="700" fill="#475569">W</text>
+                <!-- 30 ft Arrow (Sky Blue) -->
+                <g id="compass30Arrow" transform="rotate(150 50 50)">
+                  <line x1="50" y1="50" x2="50" y2="16" stroke="#0284c7" stroke-width="3" stroke-linecap="round" />
+                  <polygon points="50,11 45,21 55,21" fill="#0284c7" />
+                </g>
+                <!-- 5 ft Arrow (Emerald) -->
+                <g id="compass5Arrow" transform="rotate(135 50 50)">
+                  <line x1="50" y1="50" x2="50" y2="22" stroke="#059669" stroke-width="3" stroke-linecap="round" />
+                  <polygon points="50,17 45,27 55,27" fill="#059669" />
+                </g>
+                <circle cx="50" cy="50" r="4" fill="#0f172a" />
+              </svg>
+              <div class="space-y-1.5 text-xs">
+                <div class="font-bold text-slate-800">Wind Vectors</div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-sky-600 inline-block"></span>
+                  <span class="text-slate-600">30 ft: <strong id="compass30Label" class="font-mono text-slate-900">150°</strong></span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block"></span>
+                  <span class="text-slate-600">5 ft: <strong id="compass5Label" class="font-mono text-slate-900">135°</strong></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3-10 mph Safe Wind Window Bar -->
+            <div class="bg-slate-50 rounded-xl border border-slate-200 p-3.5 flex flex-col justify-between">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-slate-800">UC IPM Wind Window</span>
+                <span class="font-mono font-semibold text-emerald-700">3.0–10.0 mph</span>
+              </div>
+              <div class="my-2">
+                <!-- Scale 0 to 15 mph: 3 mph is 20%, 10 mph is 66.7% -->
+                <div class="relative h-4 rounded-full bg-rose-200 overflow-hidden border border-slate-300">
+                  <!-- Safe 3-10 mph zone -->
+                  <div class="absolute top-0 bottom-0 bg-emerald-400/70 border-x border-emerald-600" style="left: 20%; width: 46.67%;"></div>
+                  <!-- 5 ft marker -->
+                  <div id="wind5Marker" class="absolute top-0 bottom-0 w-1.5 bg-emerald-900 transition-all" style="left: 10.6%;" title="5 ft Wind Speed"></div>
+                  <!-- 30 ft marker -->
+                  <div id="wind30Marker" class="absolute top-0 bottom-0 w-1.5 bg-sky-700 transition-all" style="left: 15.3%;" title="30 ft Wind Speed"></div>
+                </div>
+                <div class="flex justify-between text-[10px] font-mono text-slate-500 mt-1">
+                  <span>0</span>
+                  <span>3 mph</span>
+                  <span>10 mph</span>
+                  <span>15+</span>
+                </div>
+              </div>
+              <div class="text-[11px] text-slate-600">
+                Both <span class="font-semibold text-emerald-800">5 ft</span> &amp; <span class="font-semibold text-sky-800">30 ft</span> must stay inside green zone.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Time-Stamped Compliance Audit Log Section -->
+    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="p-4 sm:p-5 border-b border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="text-base sm:text-lg font-bold text-slate-900">Time-Stamped Drift Compliance Log</h2>
+            <span id="logCountBadge" class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200">
+              0 records
+            </span>
+            <span id="goCountBadge" class="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+              GO: 0
+            </span>
+            <span id="cautionCountBadge" class="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200">
+              CAUTION: 0
+            </span>
+            <span id="stopCountBadge" class="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-rose-50 text-rose-800 border border-rose-200">
+              STOP: 0
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Permanent record of sensor readings and triggered alerts (matches <code class="font-mono text-slate-700">orchard_station_log.csv</code> schema)
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" onclick="exportLogCSV()" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-sm flex items-center gap-1.5 transition cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Export CSV Log
+          </button>
+          <button type="button" onclick="requestClearLog()" id="clearLogBtn" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 text-slate-700 border border-slate-200 text-xs sm:text-sm font-semibold transition cursor-pointer">
+            Clear Log
+          </button>
+        </div>
+      </div>
+
+      <!-- Inline Confirmation Bar (replaces browser confirm()) -->
+      <div id="clearConfirmBar" class="hidden bg-rose-50 border-b border-rose-200 px-5 py-3 flex flex-wrap items-center justify-between gap-3">
+        <span class="text-xs sm:text-sm font-semibold text-rose-900">
+          Delete all logged compliance records from this browser?
+        </span>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="confirmClearLog()" class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold cursor-pointer">
+            Yes, Clear All
+          </button>
+          <button type="button" onclick="cancelClearLog()" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 text-xs font-semibold cursor-pointer">
+            Cancel
+          </button>
+        </div>
+      </div>
+
+      <!-- Toast Notification Banner -->
+      <div id="toastBanner" class="hidden bg-slate-900 text-white px-5 py-2.5 text-xs sm:text-sm font-medium flex items-center justify-between">
+        <span id="toastMessage">Record logged.</span>
+        <button type="button" onclick="hideToast()" class="text-slate-400 hover:text-white text-xs font-bold ml-4">Dismiss</button>
+      </div>
+
+      <!-- Responsive Log Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <th class="py-3 px-4 whitespace-nowrap">Timestamp</th>
+              <th class="py-3 px-4 whitespace-nowrap">Orchard Block</th>
+              <th class="py-3 px-4 whitespace-nowrap">Status</th>
+              <th class="py-3 px-4 whitespace-nowrap">Triggers</th>
+              <th class="py-3 px-4 whitespace-nowrap">5 ft / 30 ft Temp</th>
+              <th class="py-3 px-4 whitespace-nowrap">5 ft / 30 ft Wind</th>
+              <th class="py-3 px-4">Plain-Language Explanation (WHY)</th>
+            </tr>
+          </thead>
+          <tbody id="logTableBody" class="divide-y divide-slate-100 text-xs sm:text-sm">
+            <!-- Populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ==============================================================================
+    // MULTI-HEIGHT ORCHARD WEATHER STATION DECISION ENGINE (5 FT vs. 30 FT)
+    // Exact JavaScript port of the UC IPM & California DPR Python ruleset
+    // ==============================================================================
+    const LOWER_HEIGHT_FT = 5;
+    const UPPER_HEIGHT_FT = 30;
+
+    const WIND_MIN_MPH = 3.0;           // < 3.0 mph indicates stagnant inversion air -> STOP
+    const WIND_MAX_MPH = 10.0;          // > 10.0 mph risks off-target horizontal drift -> STOP
+    const SPEED_SHEAR_LIMIT_MPH = 5.0;  // > 5.0 mph difference between 30 ft & 5 ft -> CAUTION
+    const DIR_SHEAR_LIMIT_DEG = 45.0;   // > 45° wind direction shift between heights -> CAUTION
+
+    const STORAGE_KEY = "orchard_station_audit_log_v1";
+    let auditLog = [];
+
+    // CIMIS Timeline Replay State
+    let timelineRows = [];
+    let currentTimelineIndex = 0;
+    let activeOverrideTimestamp = null;
+    let playbackTimer = null;
+
+    // Authentic 24-Hour Fresno State (#80) sample (Nov 12, 2026) showcasing dawn inversion, midday GO, and afternoon wind
+    const BUILTIN_FRESNO_24HR = [
+      { date: "11/12/2026", hourPst: 100, temp5: 46.2, ws5: 1.8, wd5: 132, solRad: 0, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 200, temp5: 45.1, ws5: 1.5, wd5: 138, solRad: 0, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 300, temp5: 44.3, ws5: 1.4, wd5: 140, solRad: 0, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 400, temp5: 43.6, ws5: 1.6, wd5: 136, solRad: 0, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 500, temp5: 43.0, ws5: 1.9, wd5: 142, solRad: 0, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 600, temp5: 42.9, ws5: 2.1, wd5: 145, solRad: 0, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 700, temp5: 44.5, ws5: 2.3, wd5: 148, solRad: 38, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 800, temp5: 49.8, ws5: 2.7, wd5: 155, solRad: 215, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 900, temp5: 56.4, ws5: 3.4, wd5: 285, solRad: 460, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 1000, temp5: 62.8, ws5: 4.3, wd5: 302, solRad: 695, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 1100, temp5: 68.5, ws5: 5.1, wd5: 312, solRad: 860, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 1200, temp5: 73.2, ws5: 5.8, wd5: 318, solRad: 940, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 1300, temp5: 77.4, ws5: 6.7, wd5: 320, solRad: 910, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 1400, temp5: 80.6, ws5: 8.4, wd5: 324, solRad: 780, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 1500, temp5: 81.9, ws5: 7.5, wd5: 322, solRad: 560, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 1600, temp5: 79.5, ws5: 5.6, wd5: 316, solRad: 290, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 1700, temp5: 74.1, ws5: 4.2, wd5: 310, solRad: 45, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 1800, temp5: 69.8, ws5: 3.9, wd5: 305, solRad: 0, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 1900, temp5: 67.4, ws5: 3.8, wd5: 298, solRad: 0, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 2000, temp5: 65.9, ws5: 3.7, wd5: 290, solRad: 0, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 2100, temp5: 62.1, ws5: 2.5, wd5: 160, solRad: 0, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 2200, temp5: 58.6, ws5: 2.1, wd5: 145, solRad: 0, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 2300, temp5: 55.4, ws5: 1.9, wd5: 140, solRad: 0, station: "Fresno State (#80)" },
+      { date: "11/12/2026", hourPst: 2400, temp5: 52.8, ws5: 1.7, wd5: 135, solRad: 0, station: "Fresno State (#80)" },
+    ];
+
+    // Fresno CIMIS #80 grounded presets for instant field testing
+    const PRESETS = {
+      inversion: {
+        block: "Orchard Block 1",
+        temp5: 45.0,
+        temp30: 49.5,
+        ws5: 1.6,
+        ws30: 2.3,
+        wd5: 135,
+        wd30: 150,
+      },
+      safe: {
+        block: "Orchard Block 1",
+        temp5: 60.5,
+        temp30: 58.0,
+        ws5: 4.4,
+        ws30: 6.4,
+        wd5: 310,
+        wd30: 325,
+      },
+      shear: {
+        block: "Orchard Block 1",
+        temp5: 71.0,
+        temp30: 68.5,
+        ws5: 3.8,
+        ws30: 9.4,
+        wd5: 275,
+        wd30: 335,
+      },
+      highwind: {
+        block: "Orchard Block 1",
+        temp5: 79.0,
+        temp30: 76.5,
+        ws5: 7.6,
+        ws30: 11.8,
+        wd5: 315,
+        wd30: 320,
+      },
+    };
+
+    /**
+     * Returns shortest compass angle difference (0° to 180°) between two heights.
+     */
+    function angularDifferenceDeg(dir5ft, dir30ft) {
+      const diff = Math.abs(dir5ft - dir30ft) % 360;
+      return diff > 180 ? 360 - diff : diff;
+    }
+
+    /**
+     * Converts 0-360 degrees to 16-point cardinal direction label.
+     */
+    function degToCardinal(deg) {
+      const dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+      const idx = Math.round(((deg % 360) + 360) % 360 / 22.5) % 16;
+      return dirs[idx];
+    }
+
+    /**
+     * Formats local timestamp as YYYY-MM-DD HH:MM:SS matching Python's strftime.
+     */
+    function formatTimestamp(dateObj = new Date()) {
+      const pad = (n) => String(n).padStart(2, "0");
+      return (
+        `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())} ` +
+        `${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:${pad(dateObj.getSeconds())}`
+      );
+    }
+
+    /**
+     * Converts CIMIS Date (MM/DD/YYYY) and Hour (PST) (e.g., 600, 1400, 2400) into YYYY-MM-DD HH:MM:SS.
+     */
+    function formatCimisTimestamp(dateStr, hourPst) {
+      const parts = String(dateStr).trim().split("/");
+      let isoDate = String(dateStr).trim();
+      if (parts.length === 3) {
+        isoDate = `${parts[2].padStart(4, "0")}-${parts[0].padStart(2, "0")}-${parts[1].padStart(2, "0")}`;
+      }
+      const hrNum = parseInt(hourPst, 10) || 0;
+      if (hrNum === 2400) {
+        return `${isoDate} 23:59:00`;
+      }
+      const hh = String(Math.floor(hrNum / 100)).padStart(2, "0");
+      const mm = String(hrNum % 100).padStart(2, "0");
+      return `${isoDate} ${hh}:${mm}:00`;
+    }
+
+    /**
+     * Simulates 30 ft above-canopy sensor readings from real 5 ft CIMIS baseline data.
+     */
+    function simulate30ftFrom5ft(hourPst, solRad, t5ft, ws5ft, wd5ft) {
+      const isNightOrTwilight = solRad <= 20 || hourPst <= 700 || hourPst >= 1800;
+      if (isNightOrTwilight && ws5ft < 4.5) {
+        return {
+          temp30: Math.round((t5ft + 4.2) * 10) / 10,
+          ws30: Math.round((ws5ft + 0.8) * 10) / 10,
+          wd30: Math.round((wd5ft + 15.0) % 360),
+        };
+      }
+      return {
+        temp30: Math.round((t5ft - 2.5) * 10) / 10,
+        ws30: Math.round(ws5ft * 1.45 * 10) / 10,
+        wd30: Math.round((wd5ft + (ws5ft < 5.0 ? 30.0 : 15.0)) % 360),
+      };
+    }
+
+    /**
+     * Parses a CSV line safely handling quoted fields.
+     */
+    function parseCsvLine(line) {
+      const result = [];
+      let current = "";
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (ch === "," && !inQuotes) {
+          result.push(current.trim());
+          current = "";
+        } else {
+          current += ch;
+        }
+      }
+      result.push(current.trim());
+      return result;
+    }
+
+    /**
+     * Parses an uploaded CIMIS Hourly CSV file and loads valid rows into timelineRows.
+     */
+    function handleCimisCsvUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const text = e.target.result;
+          const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+          if (lines.length < 2) {
+            showToast("CSV file appears empty or invalid.");
+            return;
+          }
+
+          const headers = parseCsvLine(lines[0]).map((h) => h.replace(/^\uFEFF/, "").trim());
+          const idxDate = headers.findIndex((h) => h.toLowerCase() === "date");
+          const idxHour = headers.findIndex((h) => h.toLowerCase().startsWith("hour"));
+          const idxTemp = headers.findIndex((h) => h.toLowerCase().includes("air temp"));
+          const idxWs = headers.findIndex((h) => h.toLowerCase().includes("wind speed"));
+          const idxWd = headers.findIndex((h) => h.toLowerCase().includes("wind dir"));
+          const idxSol = headers.findIndex((h) => h.toLowerCase().includes("sol rad"));
+          const idxStnName = headers.findIndex((h) => h.toLowerCase() === "station name");
+          const idxStnNum = headers.findIndex((h) => h.toLowerCase() === "station number");
+
+          if (idxDate === -1 || idxHour === -1 || idxTemp === -1 || idxWs === -1) {
+            showToast("Missing required CIMIS columns (Date, Hour (PST), Air Temp, Wind Speed).");
+            return;
+          }
+
+          const parsedRows = [];
+          for (let i = 1; i < lines.length; i++) {
+            const cols = parseCsvLine(lines[i]);
+            if (cols.length <= Math.max(idxDate, idxHour, idxTemp, idxWs)) continue;
+
+            const rawTemp = cols[idxTemp];
+            const rawWs = cols[idxWs];
+            const rawWd = idxWd !== -1 ? cols[idxWd] : "0";
+            const rawSol = idxSol !== -1 ? cols[idxSol] : "0";
+
+            // Skip missing ('M' or NaN) CIMIS observations
+            if (!rawTemp || !rawWs || rawTemp.toUpperCase() === "M" || rawWs.toUpperCase() === "M") {
+              continue;
+            }
+
+            const t5 = parseFloat(rawTemp);
+            const ws5 = parseFloat(rawWs);
+            const wd5 = rawWd && rawWd.toUpperCase() !== "M" && !Number.isNaN(parseFloat(rawWd)) ? parseFloat(rawWd) : 0;
+            const solRad = rawSol && rawSol.toUpperCase() !== "M" && !Number.isNaN(parseFloat(rawSol)) ? parseFloat(rawSol) : 0;
+
+            if (!Number.isFinite(t5) || !Number.isFinite(ws5)) continue;
+
+            const stnName = idxStnName !== -1 && cols[idxStnName] ? cols[idxStnName] : "CIMIS Station";
+            const stnNum = idxStnNum !== -1 && cols[idxStnNum] ? ` (#${cols[idxStnNum]})` : "";
+
+            parsedRows.push({
+              date: cols[idxDate],
+              hourPst: parseInt(cols[idxHour], 10) || 0,
+              temp5: t5,
+              ws5: ws5,
+              wd5: wd5,
+              solRad: solRad,
+              station: `${stnName}${stnNum}`,
+            });
+          }
+
+          if (parsedRows.length === 0) {
+            showToast("No valid hourly rows found in CSV (all rows marked missing 'M').");
+            return;
+          }
+
+          activateTimeline(parsedRows, file.name);
+        } catch (err) {
+          showToast("Error parsing CSV file. Ensure it is a standard CIMIS hourly export.");
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = "";
+    }
+
+    /**
+     * Loads the built-in 24-hour Fresno State (#80) sample dataset into the timeline player.
+     */
+    function loadBuiltInFresnoSample() {
+      activateTimeline([...BUILTIN_FRESNO_24HR], "Built-in Fresno State (#80) 24-Hr Sample");
+    }
+
+    /**
+     * Initializes timeline UI controls with loaded rows.
+     */
+    function activateTimeline(rows, sourceLabel) {
+      stopTimelinePlayback();
+      timelineRows = rows;
+      currentTimelineIndex = 0;
+
+      const playerBar = document.getElementById("timelinePlayerBar");
+      const scrubber = document.getElementById("timelineScrubber");
+      playerBar.classList.remove("hidden");
+      scrubber.min = 0;
+      scrubber.max = Math.max(0, timelineRows.length - 1);
+      scrubber.value = 0;
+
+      // Auto-populate Orchard Block field with CIMIS Station Name if available
+      if (timelineRows[0] && timelineRows[0].station) {
+        document.getElementById("orchardBlock").value = timelineRows[0].station;
+      }
+
+      applyTimelineRow(0, false);
+      showToast(`Loaded ${timelineRows.length} valid hourly readings from ${sourceLabel}.`);
+    }
+
+    /**
+     * Applies a specific timeline index to the 5 ft (and optionally 30 ft) sensor inputs.
+     */
+    function applyTimelineRow(index, shouldAutoLog = false) {
+      if (!timelineRows.length) return;
+      const clamped = Math.max(0, Math.min(timelineRows.length - 1, index));
+      currentTimelineIndex = clamped;
+
+      const row = timelineRows[clamped];
+      const ts = formatCimisTimestamp(row.date, row.hourPst);
+      activeOverrideTimestamp = ts;
+
+      document.getElementById("timelineScrubber").value = clamped;
+      document.getElementById("timelineStationBadge").textContent = row.station;
+      document.getElementById("timelineTimestampBadge").textContent = ts;
+      document.getElementById("timelineCounterBadge").textContent = `${clamped + 1} / ${timelineRows.length}`;
+
+      // Set real 5 ft CIMIS readings
+      document.getElementById("temp5Num").value = row.temp5.toFixed(1);
+      document.getElementById("temp5Slider").value = row.temp5;
+      document.getElementById("ws5Num").value = row.ws5.toFixed(1);
+      document.getElementById("ws5Slider").value = row.ws5;
+      document.getElementById("wd5Num").value = Math.round(row.wd5);
+      document.getElementById("wd5Slider").value = Math.round(row.wd5);
+
+      // Auto-derive 30 ft canopy telemetry if toggle is active
+      if (document.getElementById("autoDerive30Toggle").checked) {
+        const upper = simulate30ftFrom5ft(row.hourPst, row.solRad, row.temp5, row.ws5, row.wd5);
+        document.getElementById("temp30Num").value = upper.temp30.toFixed(1);
+        document.getElementById("temp30Slider").value = upper.temp30;
+        document.getElementById("ws30Num").value = upper.ws30.toFixed(1);
+        document.getElementById("ws30Slider").value = upper.ws30;
+        document.getElementById("wd30Num").value = Math.round(upper.wd30);
+        document.getElementById("wd30Slider").value = Math.round(upper.wd30);
+      }
+
+      updateDashboard();
+
+      if (shouldAutoLog) {
+        const inputs = getCurrentInputs();
+        const record = evaluateSprayConditions({ ...inputs, timestamp: ts });
+        auditLog.unshift(record);
+        saveLogToStorage();
+        renderLogTable();
+      }
+    }
+
+    function stepTimeline(delta) {
+      if (!timelineRows.length) return;
+      const nextIdx = (currentTimelineIndex + delta + timelineRows.length) % timelineRows.length;
+      applyTimelineRow(nextIdx, false);
+    }
+
+    function toggleTimelinePlayback() {
+      if (!timelineRows.length) return;
+      if (playbackTimer) {
+        stopTimelinePlayback();
+      } else {
+        const btn = document.getElementById("playPauseBtn");
+        const txt = document.getElementById("playPauseText");
+        btn.classList.remove("bg-emerald-600", "hover:bg-emerald-700");
+        btn.classList.add("bg-amber-600", "hover:bg-amber-700");
+        txt.textContent = "Pause";
+
+        // Log current step immediately if auto-log is checked
+        if (document.getElementById("autoLogPlaybackToggle").checked) {
+          applyTimelineRow(currentTimelineIndex, true);
+        }
+
+        playbackTimer = setInterval(() => {
+          if (currentTimelineIndex >= timelineRows.length - 1) {
+            stopTimelinePlayback();
+            showToast("Completed timeline replay.");
+            return;
+          }
+          const autoLog = document.getElementById("autoLogPlaybackToggle").checked;
+          applyTimelineRow(currentTimelineIndex + 1, autoLog);
+        }, 1500);
+      }
+    }
+
+    function stopTimelinePlayback() {
+      if (playbackTimer) {
+        clearInterval(playbackTimer);
+        playbackTimer = null;
+      }
+      const btn = document.getElementById("playPauseBtn");
+      const txt = document.getElementById("playPauseText");
+      if (btn && txt) {
+        btn.classList.remove("bg-amber-600", "hover:bg-amber-700");
+        btn.classList.add("bg-emerald-600", "hover:bg-emerald-700");
+        txt.textContent = "Play Timeline";
+      }
+    }
+
+    /**
+     * Evaluates and logs all loaded timeline rows in one batch operation.
+     */
+    function batchEvaluateTimeline() {
+      if (!timelineRows.length) {
+        showToast("Upload a CIMIS CSV or load the Fresno #80 sample first.");
+        return;
+      }
+      stopTimelinePlayback();
+
+      const blockName = document.getElementById("orchardBlock").value.trim() || timelineRows[0].station || "Orchard Block 1";
+      const batchRecords = [];
+
+      timelineRows.forEach((row) => {
+        const ts = formatCimisTimestamp(row.date, row.hourPst);
+        const upper = simulate30ftFrom5ft(row.hourPst, row.solRad, row.temp5, row.ws5, row.wd5);
+        const rec = evaluateSprayConditions({
+          temp_5ft_f: row.temp5,
+          temp_30ft_f: upper.temp30,
+          wind_speed_5ft_mph: row.ws5,
+          wind_speed_30ft_mph: upper.ws30,
+          wind_dir_5ft_deg: row.wd5,
+          wind_dir_30ft_deg: upper.wd30,
+          orchard_block: blockName,
+          timestamp: ts,
+        });
+        batchRecords.push(rec);
+      });
+
+      // Prepend newest first so table stays reverse-chronological
+      auditLog = [...batchRecords.reverse(), ...auditLog];
+      saveLogToStorage();
+      renderLogTable();
+      showToast(`Batch evaluated & logged all ${batchRecords.length} hourly readings.`);
+    }
+
+    /**
+     * Core decision engine evaluating 5 ft vs. 30 ft sensor readings.
+     */
+// ... existing code ... -->
+    function bindInputPair(numId, sliderId) {
+      const numEl = document.getElementById(numId);
+      const sliderEl = document.getElementById(sliderId);
+
+      numEl.addEventListener("input", () => {
+        activeOverrideTimestamp = null;
+        const val = parseFloat(numEl.value);
+        if (Number.isFinite(val)) {
+          sliderEl.value = val;
+        }
+        updateDashboard();
+      });
+
+      sliderEl.addEventListener("input", () => {
+        activeOverrideTimestamp = null;
+        numEl.value = sliderEl.value;
+        updateDashboard();
+      });
+    }
+
+    /**
+     * Loads a preset scenario into the inputs and updates the UI.
+     */
+    function loadPreset(key) {
+      const p = PRESETS[key];
+      if (!p) return;
+      stopTimelinePlayback();
+      activeOverrideTimestamp = null;
+      document.getElementById("temp5Num").value = p.temp5;
+// ... existing code ... -->
+    function recordCurrentReading() {
+      const inputs = getCurrentInputs();
+      const record = evaluateSprayConditions({
+        ...inputs,
+        timestamp: activeOverrideTimestamp,
+      });
+      auditLog.unshift(record);
+      saveLogToStorage();
+      renderLogTable();
+      showToast(`Logged ${record.status} decision at ${record.timestamp} (${record.orchard_block})`);
+    }
+// ... existing code ... -->
+    function renderLogTable() {
+      const tbody = document.getElementById("logTableBody");
+      const countBadge = document.getElementById("logCountBadge");
+      countBadge.textContent = `${auditLog.length} ${auditLog.length === 1 ? "record" : "records"}`;
+
+      const goCount = auditLog.filter((r) => r.status === "GO").length;
+      const cautionCount = auditLog.filter((r) => r.status === "CAUTION").length;
+      const stopCount = auditLog.filter((r) => r.status === "STOP").length;
+      document.getElementById("goCountBadge").textContent = `GO: ${goCount}`;
+      document.getElementById("cautionCountBadge").textContent = `CAUTION: ${cautionCount}`;
+      document.getElementById("stopCountBadge").textContent = `STOP: ${stopCount}`;
+
+      if (auditLog.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="py-8 px-4 text-center text-slate-500 text-sm">
+              No readings logged yet. Adjust the 5 ft and 30 ft sensors above and click
+              <strong class="text-slate-800">Evaluate &amp; Log Reading</strong> to record a time-stamped entry.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = auditLog
+        .map((r) => {
+          let pillClass = "bg-emerald-100 text-emerald-900 border-emerald-300";
+          if (r.status === "STOP") pillClass = "bg-rose-100 text-rose-900 border-rose-300";
+          else if (r.status === "CAUTION") pillClass = "bg-amber-100 text-amber-900 border-amber-300";
+
+          return `
+            <tr class="hover:bg-slate-50/80 transition">
+              <td class="py-3 px-4 font-mono text-xs text-slate-700 whitespace-nowrap">${escapeHtml(r.timestamp)}</td>
+              <td class="py-3 px-4 font-semibold text-slate-900 whitespace-nowrap">${escapeHtml(r.orchard_block)}</td>
+              <td class="py-3 px-4 whitespace-nowrap">
+                <span class="px-2.5 py-0.5 rounded-md text-xs font-extrabold border ${pillClass}">${escapeHtml(r.status)}</span>
+              </td>
+              <td class="py-3 px-4 font-mono text-xs text-slate-700 whitespace-nowrap">${escapeHtml(r.triggers)}</td>
+              <td class="py-3 px-4 font-mono text-xs text-slate-800 whitespace-nowrap">
+                ${r.temp_5ft_f.toFixed(1)}°F / ${r.temp_30ft_f.toFixed(1)}°F
+                <span class="text-slate-500">(${r.temp_diff_f > 0 ? "+" : ""}${r.temp_diff_f.toFixed(1)}°F)</span>
+              </td>
+              <td class="py-3 px-4 font-mono text-xs text-slate-800 whitespace-nowrap">
+                ${r.wind_speed_5ft_mph.toFixed(1)} / ${r.wind_speed_30ft_mph.toFixed(1)} mph
+                <span class="text-slate-500">(${r.wind_dir_5ft_deg}°/${r.wind_dir_30ft_deg}°)</span>
+              </td>
+              <td class="py-3 px-4 text-xs text-slate-700 max-w-md">${escapeHtml(r.reason)}</td>
+            </tr>
+          `;
+        })
+        .join("");
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    /**
+     * Exports audit log to orchard_station_log.csv matching exact Python CSV columns.
+     */
+    function exportLogCSV() {
+      if (auditLog.length === 0) {
+        showToast("Log is empty — click 'Evaluate & Log Reading' first before exporting CSV.");
+        return;
+      }
+
+      const headers = [
+        "timestamp",
+        "orchard_block",
+        "status",
+        "triggers",
+        "temp_5ft_f",
+        "temp_30ft_f",
+        "temp_diff_f",
+        "wind_speed_5ft_mph",
+        "wind_speed_30ft_mph",
+        "speed_diff_mph",
+        "wind_dir_5ft_deg",
+        "wind_dir_30ft_deg",
+        "dir_diff_deg",
+        "reason",
+      ];
+
+      // Export in chronological order (oldest first) just like Python's append log
+      const chronological = [...auditLog].reverse();
+      const csvLines = [headers.join(",")];
+
+      chronological.forEach((row) => {
+        const line = headers
+          .map((key) => {
+            const val = row[key] !== undefined && row[key] !== null ? String(row[key]) : "";
+            return `"${val.replace(/"/g, '""')}"`;
+          })
+          .join(",");
+        csvLines.push(line);
+      });
+
+      const blob = new Blob([csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "orchard_station_log.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showToast(`Exported ${chronological.length} records to orchard_station_log.csv`);
+    }
+
+    function requestClearLog() {
+      if (auditLog.length === 0) {
+        showToast("Log is already empty.");
+        return;
+      }
+      document.getElementById("clearConfirmBar").classList.remove("hidden");
+    }
+
+    function cancelClearLog() {
+      document.getElementById("clearConfirmBar").classList.add("hidden");
+    }
+
+    function confirmClearLog() {
+      auditLog = [];
+      saveLogToStorage();
+      renderLogTable();
+      cancelClearLog();
+      showToast("All logged compliance records cleared.");
+    }
+
+    let toastTimeout = null;
+    function showToast(msg) {
+      const banner = document.getElementById("toastBanner");
+      document.getElementById("toastMessage").textContent = msg;
+      banner.classList.remove("hidden");
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(hideToast, 4500);
+    }
+
+    function hideToast() {
+      document.getElementById("toastBanner").classList.add("hidden");
+    }
+
+    // Initialize bindings and initial render
+    window.addEventListener("DOMContentLoaded", () => {
+      bindInputPair("temp30Num", "temp30Slider");
+      bindInputPair("ws30Num", "ws30Slider");
+      bindInputPair("wd30Num", "wd30Slider");
+      bindInputPair("temp5Num", "temp5Slider");
+      bindInputPair("ws5Num", "ws5Slider");
+      bindInputPair("wd5Num", "wd5Slider");
+
+      document.getElementById("cimisCsvInput").addEventListener("change", handleCimisCsvUpload);
+      document.getElementById("timelineScrubber").addEventListener("input", (e) => {
+        stopTimelinePlayback();
+        applyTimelineRow(parseInt(e.target.value, 10) || 0, false);
+      });
+
+      loadLogFromStorage();
+      renderLogTable();
+      updateDashboard();
+    });
+  </script>
+</body>
+</html>
